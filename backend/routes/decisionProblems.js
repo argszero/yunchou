@@ -1,0 +1,81 @@
+import express from 'express';
+import DecisionProblem from '../models/DecisionProblem.js';
+import Criterion from '../models/Criterion.js';
+import Alternative from '../models/Alternative.js';
+
+const router = express.Router();
+
+// 创建新的决策问题
+router.post('/', async (req, res) => {
+  try {
+    const { title, description, criteria, alternatives } = req.body;
+
+    // 创建决策问题
+    const problemId = await DecisionProblem.create({
+      title,
+      description
+    });
+
+    // 创建准则
+    for (const [index, criterion] of criteria.entries()) {
+      await Criterion.create({
+        problemId,
+        name: criterion.name,
+        description: criterion.description,
+        sortOrder: index
+      });
+    }
+
+    // 创建备选方案
+    for (const alternative of alternatives) {
+      await Alternative.create({
+        problemId,
+        name: alternative.name,
+        description: alternative.description,
+        scores: alternative.scores
+      });
+    }
+
+    const fullProblem = await DecisionProblem.getFullProblem(problemId);
+    res.status(201).json({
+      success: true,
+      data: fullProblem
+    });
+  } catch (error) {
+    console.error('Error creating decision problem:', error);
+    res.status(500).json({
+      success: false,
+      message: '创建决策问题失败',
+      error: error.message
+    });
+  }
+});
+
+// 获取决策问题详情
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const problem = await DecisionProblem.getFullProblem(id);
+
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: '决策问题不存在'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: problem
+    });
+  } catch (error) {
+    console.error('Error fetching decision problem:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取决策问题失败',
+      error: error.message
+    });
+  }
+});
+
+export default router;

@@ -23,6 +23,11 @@ COPY --from=builder-frontend /frontend/dist ./frontend/dist
 # 复制后端文件
 COPY ./backend/package.json ./backend/
 COPY ./backend/server.js ./backend/
+COPY ./backend/config/ ./backend/config/
+COPY ./backend/utils/ ./backend/utils/
+COPY ./backend/models/ ./backend/models/
+COPY ./backend/routes/ ./backend/routes/
+COPY ./backend/database/ ./backend/database/
 
 # 安装后端依赖
 WORKDIR /app/backend
