@@ -2,16 +2,46 @@ import express from 'express';
 import DecisionProblem from '../models/DecisionProblem.js';
 import Criterion from '../models/Criterion.js';
 import Alternative from '../models/Alternative.js';
+import User from '../models/User.js';
+import { generateFingerprintData, validateFingerprintData } from '../utils/fingerprint.js';
 
 const router = express.Router();
 
+// 用户识别中间件
+const identifyUser = async (req, res, next) => {
+  try {
+    // 从请求头获取指纹数据
+    const fingerprintData = generateFingerprintData(req);
+
+    if (!validateFingerprintData(fingerprintData)) {
+      return res.status(400).json({
+        success: false,
+        message: '无效的指纹数据'
+      });
+    }
+
+    // 查找或创建用户
+    const user = await User.findOrCreate(fingerprintData);
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Error identifying user:', error);
+    res.status(500).json({
+      success: false,
+      message: '用户识别失败',
+      error: error.message
+    });
+  }
+};
+
 // 创建新的决策问题
-router.post('/', async (req, res) => {
+router.post('/', identifyUser, async (req, res) => {
   try {
     const { title, description, criteria, alternatives } = req.body;
 
     // 创建决策问题
     const problemId = await DecisionProblem.create({
+      userId: req.user.user_id,
       title,
       description
     });
@@ -46,6 +76,24 @@ router.post('/', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '创建决策问题失败',
+      error: error.message
+    });
+  }
+});
+
+// 获取用户的所有决策问题
+router.get('/', identifyUser, async (req, res) => {
+  try {
+    const problems = await User.getUserDecisionProblems(req.user.user_id);
+    res.json({
+      success: true,
+      data: problems
+    });
+  } catch (error) {
+    console.error('Error fetching user decision problems:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取决策问题列表失败',
       error: error.message
     });
   }

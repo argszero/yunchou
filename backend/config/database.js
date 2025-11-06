@@ -4,7 +4,7 @@ const dbConfig = {
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'argszero',
   password: process.env.DB_PASSWORD || 'Xj9mK2pL5vN8@qR',
-  database: process.env.DB_NAME || 'args',
+  database: process.env.DB_NAME || 'or',
   charset: 'utf8mb4',
   timezone: '+08:00',
   connectTimeout: 60000,

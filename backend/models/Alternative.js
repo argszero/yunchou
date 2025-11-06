@@ -12,13 +12,18 @@ class Alternative {
       ranking = null
     } = alternativeData;
 
+    // 生成UUID
+    const { v4: uuidv4 } = await import('uuid');
+    const alternativeId = uuidv4();
+
     const sql = `
       INSERT INTO or_alternatives
-      (problem_id, name, description, scores, closeness_coefficient, ranking)
-      VALUES (?, ?, ?, ?, ?, ?)
+      (id, problem_id, name, description, scores, closeness_coefficient, ranking)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const result = await query(sql, [
+    await query(sql, [
+      alternativeId,
       problemId,
       name,
       description,
@@ -27,7 +32,7 @@ class Alternative {
       ranking
     ]);
 
-    return result.insertId;
+    return alternativeId;
   }
 }
 

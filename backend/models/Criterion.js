@@ -5,13 +5,17 @@ class Criterion {
   static async create(criterionData) {
     const { problemId, name, description = null, sortOrder = 0 } = criterionData;
 
+    // 生成UUID
+    const { v4: uuidv4 } = await import('uuid');
+    const criterionId = uuidv4();
+
     const sql = `
-      INSERT INTO or_criteria (problem_id, name, description, sort_order)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO or_criteria (id, problem_id, name, description, sort_order)
+      VALUES (?, ?, ?, ?, ?)
     `;
 
-    const result = await query(sql, [problemId, name, description, sortOrder]);
-    return result.insertId;
+    await query(sql, [criterionId, problemId, name, description, sortOrder]);
+    return criterionId;
   }
 }
 

@@ -4,6 +4,7 @@ class DecisionProblem {
   // 创建决策问题
   static async create(problemData) {
     const {
+      userId,
       title,
       description = null,
       weights = null,
@@ -11,13 +12,19 @@ class DecisionProblem {
       isConsistent = false
     } = problemData;
 
+    // 生成UUID
+    const { v4: uuidv4 } = await import('uuid');
+    const problemId = uuidv4();
+
     const sql = `
       INSERT INTO or_decision_problems
-      (title, description, weights, consistency_ratio, is_consistent)
-      VALUES (?, ?, ?, ?, ?)
+      (id, user_id, title, description, weights, consistency_ratio, is_consistent)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const result = await query(sql, [
+    await query(sql, [
+      problemId,
+      userId,
       title,
       description,
       weights ? JSON.stringify(weights) : null,
@@ -25,7 +32,7 @@ class DecisionProblem {
       isConsistent
     ]);
 
-    return result.insertId;
+    return problemId;
   }
 
   // 根据ID获取决策问题

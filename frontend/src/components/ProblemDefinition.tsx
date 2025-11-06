@@ -8,10 +8,12 @@ import {
   CardContent,
   IconButton,
   Grid,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { Add, Delete } from '@mui/icons-material';
 import type { DecisionProblem, Criterion, Alternative } from '../types';
+import { apiClient } from '../utils/api';
 
 interface ProblemDefinitionProps {
   onProblemDefined: (problem: DecisionProblem) => void;
@@ -30,6 +32,7 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
   const [alternatives, setAlternatives] = useState<Alternative[]>([
     { id: '1', name: '', description: '', scores: [] }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addCriterion = () => {
     if (criteria.length >= 8) {
@@ -86,7 +89,7 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
     ));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // 验证输入
     if (!title.trim()) {
       onError('请输入决策问题标题');
@@ -105,28 +108,38 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
       return;
     }
 
-    // 创建决策问题
-    const problem: DecisionProblem = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      description: description.trim(),
-      criteria: criteria.map(c => ({
-        ...c,
-        name: c.name.trim(),
-        description: c.description?.trim() || ''
-      })),
-      alternatives: alternatives.map(a => ({
-        ...a,
-        name: a.name.trim(),
-        description: a.description?.trim() || '',
-        scores: new Array(criteria.length).fill(0)
-      })),
-      weights: new Array(criteria.length).fill(0),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    setIsLoading(true);
 
-    onProblemDefined(problem);
+    try {
+      // 准备数据
+      const problemData = {
+        title: title.trim(),
+        description: description.trim(),
+        criteria: criteria.map(c => ({
+          name: c.name.trim(),
+          description: c.description?.trim() || ''
+        })),
+        alternatives: alternatives.map(a => ({
+          name: a.name.trim(),
+          description: a.description?.trim() || '',
+          scores: new Array(criteria.length).fill(0)
+        }))
+      };
+
+      // 调用API保存到数据库
+      const response = await apiClient.createDecisionProblem(problemData);
+
+      if (response.success && response.data) {
+        onProblemDefined(response.data);
+      } else {
+        onError(response.message || '创建决策问题失败');
+      }
+    } catch (error) {
+      console.error('Error creating decision problem:', error);
+      onError('创建决策问题失败，请检查网络连接');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -285,9 +298,10 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
           variant="contained"
           size="large"
           onClick={handleSubmit}
-          disabled={!title.trim() || criteria.some(c => !c.name.trim()) || alternatives.some(a => !a.name.trim())}
+          disabled={isLoading || !title.trim() || criteria.some(c => !c.name.trim()) || alternatives.some(a => !a.name.trim())}
+          startIcon={isLoading ? <CircularProgress size={16} /> : null}
         >
-          确认并继续
+          {isLoading ? '保存中...' : '确认并继续'}
         </Button>
       </Box>
     </Box>
