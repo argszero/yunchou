@@ -4,14 +4,12 @@ import {
   TextField,
   Button,
   Typography,
-  Card,
-  CardContent,
   IconButton,
-  Grid,
+  CircularProgress,
   Alert,
-  CircularProgress
+  Collapse
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Add, Delete, ExpandMore, ExpandLess } from '@mui/icons-material';
 import type { DecisionProblem, Criterion, Alternative } from '../types';
 import { apiClient } from '../utils/api';
 
@@ -143,42 +141,88 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
   };
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        定义决策问题
-      </Typography>
+    <Box sx={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      bgcolor: 'background.default'
+    }}>
+      {/* App页面标题 - 移除边框和左右内边距 */}
+      <Box sx={{
+        py: 2,
+        px: 0,
+        bgcolor: 'background.paper'
+      }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontSize: '1.25rem',
+            fontWeight: 700,
+            color: 'text.primary',
+            px: 2
+          }}
+        >
+          定义决策问题
+        </Typography>
+      </Box>
 
-      {/* 问题基本信息 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            问题基本信息
-          </Typography>
-          <TextField
-            fullWidth
-            label="决策问题标题"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例如：选择最优的运筹学作业课题"
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="问题描述（可选）"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="详细描述您的决策问题..."
-            multiline
-            rows={3}
-          />
-        </CardContent>
-      </Card>
+      {/* 滚动内容区域 - 移除边框和间隙 */}
+      <Box sx={{
+        flex: 1,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {/* 问题基本信息 - 移除边框和标题，减少左右内边距 */}
+        <Box sx={{ py: 1, px: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="决策问题标题"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="例如：选择最优的运筹学作业课题"
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
+                }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="问题描述（可选）"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="详细描述您的决策问题..."
+              multiline
+              rows={2}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
+                }
+              }}
+            />
+          </Box>
+        </Box>
 
-      {/* 评价准则 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
+        {/* 评价准则 - 移除边框和背景，减少左右内边距 */}
+        <Box sx={{ py: 1, px: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2
+          }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: 'text.primary'
+              }}
+            >
               评价准则 ({criteria.length}/8)
             </Typography>
             <Button
@@ -187,19 +231,39 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
               variant="outlined"
               size="small"
               disabled={criteria.length >= 8}
+              sx={{
+                borderRadius: 1,
+                minWidth: 'auto'
+              }}
             >
-              添加准则
+              添加
             </Button>
           </Box>
 
-          <Alert severity="info" sx={{ mb: 2 }}>
-            请定义用于评价备选方案的准则。例如：数据可得性、模型复杂度、成果惊艳度等。
-          </Alert>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2 }}
+          >
+            请定义用于评价备选方案的准则
+          </Typography>
 
-          {criteria.map((criterion, index) => (
-            <Box key={criterion.id} sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '40%' } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {criteria.map((criterion, index) => (
+              <Box
+                key={criterion.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1
+                }}
+              >
+                <Box sx={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1
+                }}>
                   <TextField
                     fullWidth
                     label={`准则 ${index + 1} 名称`}
@@ -207,37 +271,60 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
                     onChange={(e) => updateCriterion(criterion.id, 'name', e.target.value)}
                     placeholder="例如：数据可得性"
                     required
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 1
+                      }
+                    }}
                   />
-                </Grid>
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '50%' } }}>
                   <TextField
                     fullWidth
                     label="描述（可选）"
                     value={criterion.description}
                     onChange={(e) => updateCriterion(criterion.id, 'description', e.target.value)}
                     placeholder="详细描述此准则..."
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 1
+                      }
+                    }}
                   />
-                </Grid>
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '10%' } }}>
-                  <IconButton
-                    onClick={() => removeCriterion(criterion.id)}
-                    color="error"
-                    disabled={criteria.length <= 1}
-                  >
-                    <Delete />
-                  </IconButton>
-                </Grid>
-              </Grid>
-            </Box>
-          ))}
-        </CardContent>
-      </Card>
+                </Box>
+                <IconButton
+                  onClick={() => removeCriterion(criterion.id)}
+                  color="error"
+                  disabled={criteria.length <= 1}
+                  size="small"
+                  sx={{
+                    mt: 0.5,
+                    flexShrink: 0
+                  }}
+                >
+                  <Delete />
+                </IconButton>
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
-      {/* 备选方案 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
+        {/* 备选方案 - 移除边框和背景，减少左右内边距 */}
+        <Box sx={{ py: 1, px: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2
+          }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: 'text.primary'
+              }}
+            >
               备选方案 ({alternatives.length}/20)
             </Typography>
             <Button
@@ -246,19 +333,39 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
               variant="outlined"
               size="small"
               disabled={alternatives.length >= 20}
+              sx={{
+                borderRadius: 1,
+                minWidth: 'auto'
+              }}
             >
-              添加方案
+              添加
             </Button>
           </Box>
 
-          <Alert severity="info" sx={{ mb: 2 }}>
-            请列出所有可供选择的方案。例如：共享单车调度优化、地铁时刻表优化等。
-          </Alert>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2 }}
+          >
+            请列出所有可供选择的方案
+          </Typography>
 
-          {alternatives.map((alternative, index) => (
-            <Box key={alternative.id} sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '40%' } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {alternatives.map((alternative, index) => (
+              <Box
+                key={alternative.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1
+                }}
+              >
+                <Box sx={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1
+                }}>
                   <TextField
                     fullWidth
                     label={`方案 ${index + 1} 名称`}
@@ -266,40 +373,64 @@ export const ProblemDefinition: React.FC<ProblemDefinitionProps> = ({
                     onChange={(e) => updateAlternative(alternative.id, 'name', e.target.value)}
                     placeholder="例如：共享单车调度优化"
                     required
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 1
+                      }
+                    }}
                   />
-                </Grid>
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '50%' } }}>
                   <TextField
                     fullWidth
                     label="描述（可选）"
                     value={alternative.description}
                     onChange={(e) => updateAlternative(alternative.id, 'description', e.target.value)}
                     placeholder="详细描述此方案..."
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 1
+                      }
+                    }}
                   />
-                </Grid>
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '10%' } }}>
-                  <IconButton
-                    onClick={() => removeAlternative(alternative.id)}
-                    color="error"
-                    disabled={alternatives.length <= 1}
-                  >
-                    <Delete />
-                  </IconButton>
-                </Grid>
-              </Grid>
-            </Box>
-          ))}
-        </CardContent>
-      </Card>
+                </Box>
+                <IconButton
+                  onClick={() => removeAlternative(alternative.id)}
+                  color="error"
+                  disabled={alternatives.length <= 1}
+                  size="small"
+                  sx={{
+                    mt: 0.5,
+                    flexShrink: 0
+                  }}
+                >
+                  <Delete />
+                </IconButton>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
 
-      {/* 提交按钮 */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+      {/* App底部操作栏 - 移除边框和左右内边距 */}
+      <Box sx={{
+        py: 2,
+        px: 0,
+        bgcolor: 'background.paper'
+      }}>
         <Button
           variant="contained"
-          size="large"
+          fullWidth
           onClick={handleSubmit}
           disabled={isLoading || !title.trim() || criteria.some(c => !c.name.trim()) || alternatives.some(a => !a.name.trim())}
           startIcon={isLoading ? <CircularProgress size={16} /> : null}
+          sx={{
+            height: '48px',
+            borderRadius: 1,
+            fontSize: '1rem',
+            fontWeight: 600,
+            mx: 2
+          }}
         >
           {isLoading ? '保存中...' : '确认并继续'}
         </Button>

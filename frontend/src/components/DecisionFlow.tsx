@@ -115,9 +115,17 @@ export const DecisionFlow: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      {/* 步骤指示器 */}
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+    <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* 步骤指示器 - 移动端优化 */}
+      <Stepper
+        activeStep={activeStep}
+        sx={{
+          mb: { xs: 2, sm: 3, md: 4 },
+          '& .MuiStepLabel-label': {
+            fontSize: { xs: '0.75rem', sm: '0.875rem' }
+          }
+        }}
+      >
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -132,37 +140,61 @@ export const DecisionFlow: React.FC = () => {
         </Alert>
       )}
 
-      {/* 步骤内容 */}
-      <Paper
+      {/* 步骤内容 - 移动端优化 */}
+      <Box
         sx={{
-          p: 3,
-          minHeight: 400,
+          p: { xs: 0, sm: 0 },
+          minHeight: { xs: 300, sm: 400 },
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          flex: 1
         }}
       >
         {renderStepContent(activeStep)}
-      </Paper>
+      </Box>
 
-      {/* 导航按钮 */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+      {/* 导航按钮 - 移动端优化 */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        mt: 2,
+        gap: 1
+      }}>
         <Button
           disabled={activeStep === 0}
           onClick={handleBack}
           variant="outlined"
+          size="large"
+          sx={{
+            flex: 1,
+            minHeight: '48px'
+          }}
         >
           上一步
         </Button>
 
         {activeStep === steps.length - 1 ? (
-          <Button onClick={handleReset} variant="contained">
+          <Button
+            onClick={handleReset}
+            variant="contained"
+            size="large"
+            sx={{
+              flex: 1,
+              minHeight: '48px'
+            }}
+          >
             重新开始
           </Button>
         ) : (
           <Button
             onClick={handleNext}
             variant="contained"
+            size="large"
             disabled={!decisionProblem && activeStep > 0}
+            sx={{
+              flex: 1,
+              minHeight: '48px'
+            }}
           >
             下一步
           </Button>
@@ -171,7 +203,11 @@ export const DecisionFlow: React.FC = () => {
 
       {/* 进度信息 */}
       <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+        >
           步骤 {activeStep + 1} / {steps.length}
         </Typography>
       </Box>
