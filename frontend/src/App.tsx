@@ -2,7 +2,6 @@ import {
   ThemeProvider,
   createTheme,
   CssBaseline,
-  Container,
   AppBar,
   Toolbar,
   Typography,
@@ -134,14 +133,16 @@ function App() {
           </AppBar>
 
           {/* 主内容区域 - 移动端优化 */}
-          <Container
-            maxWidth="lg"
+          <Box
             sx={{
               py: { xs: 2, sm: 3, md: 4 },
               px: { xs: 1, sm: 2 },
               flex: 1,
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              width: '100%',
+              maxWidth: '100vw',
+              boxSizing: 'border-box'
             }}
           >
             <Paper
@@ -164,7 +165,7 @@ function App() {
                 <Route path="/legacy" element={<DecisionFlow />} />
               </Routes>
             </Paper>
-          </Container>
+          </Box>
 
           {/* 页脚 - 移动端优化 */}
           <Box
@@ -177,7 +178,7 @@ function App() {
               borderColor: 'divider'
             }}
           >
-            <Container maxWidth="lg">
+            <Box sx={{ width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -186,7 +187,7 @@ function App() {
               >
                 © 2024 运筹决策助手 - 基于运筹学AHP+TOPSIS模型的决策辅助系统
               </Typography>
-            </Container>
+            </Box>
           </Box>
         </Box>
       </Router>

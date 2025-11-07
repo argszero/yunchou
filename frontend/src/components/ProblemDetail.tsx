@@ -105,7 +105,13 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{
+          p: 2,
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'hidden'
+        }}>
           {children}
         </Box>
       )}
@@ -811,29 +817,51 @@ export const ProblemDetail: React.FC = () => {
   }
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{
+      width: '100%',
+      maxWidth: '100vw',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflowX: 'hidden'
+    }}>
       {/* 返回按钮 */}
       <Button
         startIcon={<ArrowBack />}
         onClick={handleBack}
-        sx={{ alignSelf: 'flex-start', mb: 3 }}
+        sx={{ alignSelf: 'flex-start', mb: 3, ml: 2 }}
       >
         返回
       </Button>
 
       {/* 问题标题 */}
-      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, px: 2 }}>
         {problem.title}
       </Typography>
 
       {/* 标签页 */}
-      <Paper elevation={0} sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Paper elevation={0} sx={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden'
+      }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
             borderBottom: 1,
-            borderColor: 'divider'
+            borderColor: 'divider',
+            width: '100%',
+            maxWidth: '100%',
+            '& .MuiTab-root': {
+              minWidth: 'auto',
+              px: 2
+            }
           }}
         >
           <Tab label="评价准则" />
