@@ -67,12 +67,30 @@ export const ProblemDetail: React.FC = () => {
   const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0);
   const [ahpFullScreenMode, setAhpFullScreenMode] = useState(false);
   const [currentAhpComparison, setCurrentAhpComparison] = useState<{ criterion1: string; criterion2: string } | null>(null);
+  const [autoNavigateTimer, setAutoNavigateTimer] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
       loadProblem(id);
     }
   }, [id]);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (autoNavigateTimer) {
+        clearTimeout(autoNavigateTimer);
+      }
+    };
+  }, [autoNavigateTimer]);
+
+  // 当比较对变化时清理定时器
+  useEffect(() => {
+    if (autoNavigateTimer) {
+      clearTimeout(autoNavigateTimer);
+      setAutoNavigateTimer(null);
+    }
+  }, [currentAhpComparison]);
 
   // 初始化默认权重
   useEffect(() => {
@@ -377,6 +395,19 @@ export const ProblemDetail: React.FC = () => {
           [currentAhpComparison.criterion1]: 1 / ahpValue
         }
       }));
+
+
+      // 清除之前的定时器
+      if (autoNavigateTimer) {
+        clearTimeout(autoNavigateTimer);
+      }
+
+      // 设置1秒后自动跳转的定时器
+      const timer = setTimeout(() => {
+        handleNextAhpComparison();
+      }, 1000);
+
+      setAutoNavigateTimer(timer);
     }
   };
 
