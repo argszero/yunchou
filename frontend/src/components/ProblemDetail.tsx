@@ -21,9 +21,20 @@ import {
   LinearProgress,
   Fab
 } from '@mui/material';
-import { ArrowBack, Close, NavigateBefore, NavigateNext } from '@mui/icons-material';
+import {
+  ArrowBack,
+  Close,
+  NavigateBefore,
+  NavigateNext,
+  Add,
+  Edit,
+  Delete,
+  DragIndicator,
+  Save,
+  Cancel
+} from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { DecisionProblem } from '../types';
+import type { DecisionProblem, Criterion, Alternative } from '../types';
 import { apiClient } from '../utils/api';
 import {
   RadarChart,
@@ -118,6 +129,16 @@ export const ProblemDetail: React.FC = () => {
   const [ahpFullScreenMode, setAhpFullScreenMode] = useState(false);
   const [currentAhpComparison, setCurrentAhpComparison] = useState<{ criterion1: string; criterion2: string } | null>(null);
   const [autoNavigateTimer, setAutoNavigateTimer] = useState<number | null>(null);
+
+  // 编辑相关状态
+  const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
+  const [editingAlternative, setEditingAlternative] = useState<Alternative | null>(null);
+  const [newCriterionName, setNewCriterionName] = useState('');
+  const [newAlternativeName, setNewAlternativeName] = useState('');
+  const [showAddCriterion, setShowAddCriterion] = useState(false);
+  const [showAddAlternative, setShowAddAlternative] = useState(false);
+  const [deletingCriterion, setDeletingCriterion] = useState<Criterion | null>(null);
+  const [deletingAlternative, setDeletingAlternative] = useState<Alternative | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -630,6 +651,140 @@ export const ProblemDetail: React.FC = () => {
     });
   };
 
+  // 编辑相关函数
+  const handleAddCriterion = () => {
+    if (!problem || !newCriterionName.trim()) return;
+
+    const newCriterion: Criterion = {
+      id: `criterion-${Date.now()}`,
+      name: newCriterionName.trim(),
+      description: ''
+    };
+
+    const updatedProblem = {
+      ...problem,
+      criteria: [...problem.criteria, newCriterion]
+    };
+
+    setProblem(updatedProblem);
+    setNewCriterionName('');
+    setShowAddCriterion(false);
+  };
+
+  const handleAddAlternative = () => {
+    if (!problem || !newAlternativeName.trim()) return;
+
+    const newAlternative: Alternative = {
+      id: `alternative-${Date.now()}`,
+      name: newAlternativeName.trim(),
+      description: '',
+      scores: []
+    };
+
+    const updatedProblem = {
+      ...problem,
+      alternatives: [...problem.alternatives, newAlternative]
+    };
+
+    setProblem(updatedProblem);
+    setNewAlternativeName('');
+    setShowAddAlternative(false);
+  };
+
+  const handleEditCriterion = (criterion: Criterion) => {
+    setEditingCriterion(criterion);
+  };
+
+  const handleEditAlternative = (alternative: Alternative) => {
+    setEditingAlternative(alternative);
+  };
+
+  const handleSaveCriterion = () => {
+    if (!problem || !editingCriterion || !editingCriterion.name.trim()) return;
+
+    const updatedCriteria = problem.criteria.map(criterion =>
+      criterion.id === editingCriterion.id ? editingCriterion : criterion
+    );
+
+    const updatedProblem = {
+      ...problem,
+      criteria: updatedCriteria
+    };
+
+    setProblem(updatedProblem);
+    setEditingCriterion(null);
+  };
+
+  const handleSaveAlternative = () => {
+    if (!problem || !editingAlternative || !editingAlternative.name.trim()) return;
+
+    const updatedAlternatives = problem.alternatives.map(alternative =>
+      alternative.id === editingAlternative.id ? editingAlternative : alternative
+    );
+
+    const updatedProblem = {
+      ...problem,
+      alternatives: updatedAlternatives
+    };
+
+    setProblem(updatedProblem);
+    setEditingAlternative(null);
+  };
+
+  const handleDeleteCriterion = (criterionId: string) => {
+    if (!problem) return;
+
+    const updatedCriteria = problem.criteria.filter(criterion => criterion.id !== criterionId);
+    const updatedProblem = {
+      ...problem,
+      criteria: updatedCriteria
+    };
+
+    setProblem(updatedProblem);
+  };
+
+  const handleDeleteAlternative = (alternativeId: string) => {
+    if (!problem) return;
+
+    const updatedAlternatives = problem.alternatives.filter(alternative => alternative.id !== alternativeId);
+    const updatedProblem = {
+      ...problem,
+      alternatives: updatedAlternatives
+    };
+
+    setProblem(updatedProblem);
+  };
+
+  const handleReorderCriteria = (fromIndex: number, toIndex: number) => {
+    if (!problem) return;
+
+    const updatedCriteria = [...problem.criteria];
+    const [movedCriterion] = updatedCriteria.splice(fromIndex, 1);
+    updatedCriteria.splice(toIndex, 0, movedCriterion);
+
+    const updatedProblem = {
+      ...problem,
+      criteria: updatedCriteria
+    };
+
+    setProblem(updatedProblem);
+  };
+
+  const handleReorderAlternatives = (fromIndex: number, toIndex: number) => {
+    if (!problem) return;
+
+    const updatedAlternatives = [...problem.alternatives];
+    const [movedAlternative] = updatedAlternatives.splice(fromIndex, 1);
+    updatedAlternatives.splice(toIndex, 0, movedAlternative);
+
+    const updatedProblem = {
+      ...problem,
+      alternatives: updatedAlternatives
+    };
+
+    setProblem(updatedProblem);
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
@@ -688,56 +843,402 @@ export const ProblemDetail: React.FC = () => {
           <Tab label="结果分析" />
         </Tabs>
 
-        {/* 评价准则面板 */}
+        {/* 评价准则面板 - 支持编辑 */}
         <TabPanel value={activeTab} index={0}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            评价准则
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              评价准则
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setShowAddCriterion(true)}
+              size="small"
+            >
+              添加准则
+            </Button>
+          </Box>
+
           {problem.criteria && problem.criteria.length > 0 ? (
             <Box>
-              {problem.criteria.map((criterion) => (
+              {problem.criteria.map((criterion, index) => (
                 <Paper
                   key={criterion.id}
                   elevation={1}
-                  sx={{ p: 2, mb: 1, borderRadius: 1 }}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                  onClick={() => handleEditCriterion(criterion)}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                    {criterion.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <DragIndicator
+                        sx={{
+                          color: 'text.secondary',
+                          cursor: 'grab',
+                          '&:active': { cursor: 'grabbing' }
+                        }}
+                      />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                        {criterion.name}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingCriterion(criterion);
+                      }}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': { bgcolor: 'error.light' }
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Box>
                 </Paper>
               ))}
             </Box>
           ) : (
-            <Typography color="text.secondary">
-              暂无评价准则
-            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                bgcolor: 'grey.50',
+                borderRadius: 2
+              }}
+            >
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                暂无评价准则
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => setShowAddCriterion(true)}
+              >
+                添加第一个准则
+              </Button>
+            </Paper>
           )}
+
+          {/* 添加准则弹窗 */}
+          <Dialog
+            open={showAddCriterion}
+            onClose={() => setShowAddCriterion(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                添加评价准则
+              </Typography>
+              <TextField
+                fullWidth
+                label="准则名称"
+                value={newCriterionName}
+                onChange={(e) => setNewCriterionName(e.target.value)}
+                placeholder="请输入评价准则名称"
+                autoFocus
+                sx={{ mb: 3 }}
+              />
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setShowAddCriterion(false)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleAddCriterion}
+                  disabled={!newCriterionName.trim()}
+                >
+                  添加
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
+
+          {/* 编辑准则弹窗 */}
+          <Dialog
+            open={!!editingCriterion}
+            onClose={() => setEditingCriterion(null)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                编辑评价准则
+              </Typography>
+              <TextField
+                fullWidth
+                label="准则名称"
+                value={editingCriterion?.name || ''}
+                onChange={(e) => setEditingCriterion(prev => prev ? { ...prev, name: e.target.value } : null)}
+                placeholder="请输入评价准则名称"
+                autoFocus
+                sx={{ mb: 3 }}
+              />
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setEditingCriterion(null)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveCriterion}
+                  disabled={!editingCriterion?.name?.trim()}
+                >
+                  保存
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
+
+          {/* 删除准则确认对话框 */}
+          <Dialog
+            open={!!deletingCriterion}
+            onClose={() => setDeletingCriterion(null)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2, color: 'error.main' }}>
+                ⚠️ 确认删除
+              </Typography>
+              <Typography sx={{ mb: 3 }}>
+                确定要删除评价准则 "{deletingCriterion?.name}" 吗？此操作不可撤销。
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setDeletingCriterion(null)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => {
+                    if (deletingCriterion) {
+                      handleDeleteCriterion(deletingCriterion.id);
+                      setDeletingCriterion(null);
+                    }
+                  }}
+                >
+                  确认删除
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
         </TabPanel>
 
-        {/* 备选方案面板 */}
+        {/* 备选方案面板 - 支持编辑 */}
         <TabPanel value={activeTab} index={1}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            备选方案
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              备选方案
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setShowAddAlternative(true)}
+              size="small"
+            >
+              添加方案
+            </Button>
+          </Box>
+
           {problem.alternatives && problem.alternatives.length > 0 ? (
             <Box>
-              {problem.alternatives.map((alternative) => (
+              {problem.alternatives.map((alternative, index) => (
                 <Paper
                   key={alternative.id}
                   elevation={1}
-                  sx={{ p: 2, mb: 1, borderRadius: 1 }}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                  onClick={() => handleEditAlternative(alternative)}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                    {alternative.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <DragIndicator
+                        sx={{
+                          color: 'text.secondary',
+                          cursor: 'grab',
+                          '&:active': { cursor: 'grabbing' }
+                        }}
+                      />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                        {alternative.name}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingAlternative(alternative);
+                      }}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': { bgcolor: 'error.light' }
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Box>
                 </Paper>
               ))}
             </Box>
           ) : (
-            <Typography color="text.secondary">
-              暂无备选方案
-            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                bgcolor: 'grey.50',
+                borderRadius: 2
+              }}
+            >
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                暂无备选方案
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => setShowAddAlternative(true)}
+              >
+                添加第一个方案
+              </Button>
+            </Paper>
           )}
+
+          {/* 添加方案弹窗 */}
+          <Dialog
+            open={showAddAlternative}
+            onClose={() => setShowAddAlternative(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                添加备选方案
+              </Typography>
+              <TextField
+                fullWidth
+                label="方案名称"
+                value={newAlternativeName}
+                onChange={(e) => setNewAlternativeName(e.target.value)}
+                placeholder="请输入备选方案名称"
+                autoFocus
+                sx={{ mb: 3 }}
+              />
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setShowAddAlternative(false)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleAddAlternative}
+                  disabled={!newAlternativeName.trim()}
+                >
+                  添加
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
+
+          {/* 编辑方案弹窗 */}
+          <Dialog
+            open={!!editingAlternative}
+            onClose={() => setEditingAlternative(null)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                编辑备选方案
+              </Typography>
+              <TextField
+                fullWidth
+                label="方案名称"
+                value={editingAlternative?.name || ''}
+                onChange={(e) => setEditingAlternative(prev => prev ? { ...prev, name: e.target.value } : null)}
+                placeholder="请输入备选方案名称"
+                autoFocus
+                sx={{ mb: 3 }}
+              />
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setEditingAlternative(null)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveAlternative}
+                  disabled={!editingAlternative?.name?.trim()}
+                >
+                  保存
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
+
+          {/* 删除方案确认对话框 */}
+          <Dialog
+            open={!!deletingAlternative}
+            onClose={() => setDeletingAlternative(null)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <Typography variant="h6" sx={{ mb: 2, color: 'error.main' }}>
+                ⚠️ 确认删除
+              </Typography>
+              <Typography sx={{ mb: 3 }}>
+                确定要删除备选方案 "{deletingAlternative?.name}" 吗？此操作不可撤销。
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => setDeletingAlternative(null)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => {
+                    if (deletingAlternative) {
+                      handleDeleteAlternative(deletingAlternative.id);
+                      setDeletingAlternative(null);
+                    }
+                  }}
+                >
+                  确认删除
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
         </TabPanel>
 
         {/* 权重分配面板 */}
