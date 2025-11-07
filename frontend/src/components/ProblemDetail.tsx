@@ -27,11 +27,8 @@ import {
   NavigateBefore,
   NavigateNext,
   Add,
-  Edit,
   Delete,
-  DragIndicator,
-  Save,
-  Cancel
+  DragIndicator
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { DecisionProblem, Criterion, Alternative } from '../types';
@@ -761,35 +758,6 @@ export const ProblemDetail: React.FC = () => {
     setProblem(updatedProblem);
   };
 
-  const handleReorderCriteria = (fromIndex: number, toIndex: number) => {
-    if (!problem) return;
-
-    const updatedCriteria = [...problem.criteria];
-    const [movedCriterion] = updatedCriteria.splice(fromIndex, 1);
-    updatedCriteria.splice(toIndex, 0, movedCriterion);
-
-    const updatedProblem = {
-      ...problem,
-      criteria: updatedCriteria
-    };
-
-    setProblem(updatedProblem);
-  };
-
-  const handleReorderAlternatives = (fromIndex: number, toIndex: number) => {
-    if (!problem) return;
-
-    const updatedAlternatives = [...problem.alternatives];
-    const [movedAlternative] = updatedAlternatives.splice(fromIndex, 1);
-    updatedAlternatives.splice(toIndex, 0, movedAlternative);
-
-    const updatedProblem = {
-      ...problem,
-      alternatives: updatedAlternatives
-    };
-
-    setProblem(updatedProblem);
-  };
 
   if (isLoading) {
     return (
@@ -889,7 +857,7 @@ export const ProblemDetail: React.FC = () => {
 
           {problem.criteria && problem.criteria.length > 0 ? (
             <Box>
-              {problem.criteria.map((criterion, index) => (
+              {problem.criteria.map((criterion) => (
                 <Paper
                   key={criterion.id}
                   elevation={1}
@@ -1088,7 +1056,7 @@ export const ProblemDetail: React.FC = () => {
 
           {problem.alternatives && problem.alternatives.length > 0 ? (
             <Box>
-              {problem.alternatives.map((alternative, index) => (
+              {problem.alternatives.map((alternative) => (
                 <Paper
                   key={alternative.id}
                   elevation={1}
@@ -1313,11 +1281,6 @@ export const ProblemDetail: React.FC = () => {
                           <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                             {criterion.name}
                           </Typography>
-                          {criterion.description && (
-                            <Typography variant="body2" color="text.secondary">
-                              {criterion.description}
-                            </Typography>
-                          )}
                         </Box>
                         <Box sx={{ flex: 2 }}>
                           <Slider
@@ -1501,11 +1464,6 @@ export const ProblemDetail: React.FC = () => {
                           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                             {alternative.name}
                           </Typography>
-                          {alternative.description && (
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {alternative.description}
-                            </Typography>
-                          )}
 
                           {/* 进度条 */}
                           <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
