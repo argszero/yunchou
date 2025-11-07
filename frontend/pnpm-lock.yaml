@@ -41,6 +41,9 @@ importers:
       react-dom:
         specifier: ^19.1.1
         version: 19.2.0(react@19.2.0)
+      react-router-dom:
+        specifier: ^6.30.1
+        version: 6.30.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       recharts:
         specifier: ^3.3.0
         version: 3.3.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react-is@19.2.0)(react@19.2.0)(redux@5.0.1)
@@ -57,6 +60,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.9
         version: 19.2.2(@types/react@19.2.2)
+      '@types/react-router-dom':
+        specifier: ^5.3.3
+        version: 5.3.3
       '@vitejs/plugin-react':
         specifier: ^5.0.4
         version: 5.1.0(vite@7.1.12(@types/node@24.10.0))
@@ -568,6 +574,10 @@ packages:
       react-redux:
         optional: true
 
+  '@remix-run/router@1.23.0':
+    resolution: {integrity: sha512-O3rHJzAQKamUz1fvE0Qaw0xSFqsA/yafi2iqeE0pvdFtCO1viYx8QL6f3Ln/aCCTLxs68SLf0KPM9eSeM8yBnA==}
+    engines: {node: '>=14.0.0'}
+
   '@rolldown/pluginutils@1.0.0-beta.43':
     resolution: {integrity: sha512-5Uxg7fQUCmfhax7FJke2+8B6cqgeUJUD9o2uXIKXhD+mG0mL6NObmVoi9wXEU1tY89mZKgAYA6fTbftx3q2ZPQ==}
 
@@ -729,6 +739,9 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  '@types/history@4.7.11':
+    resolution: {integrity: sha512-qjDJRrmvBMiTx+jyLxvLfJU7UznFuokDv4f3WRuriHKERccVpFU+8XMQUAbDzoiJCsmexxRExQeMwwCdamSKDA==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -751,6 +764,12 @@ packages:
     resolution: {integrity: sha512-9KQPoO6mZCi7jcIStSnlOWn2nEF3mNmyr3rIAsGnAbQKYbRLyqmeSc39EVgtxXVia+LMT8j3knZLAZAh+xLmrw==}
     peerDependencies:
       '@types/react': ^19.2.0
+
+  '@types/react-router-dom@5.3.3':
+    resolution: {integrity: sha512-kpqnYK4wcdm5UaWI3fLcELopqLrHgLqNsdpHauzlQktfkHL3npOSwtj1Uz9oKBAzs7lFtVkV8j83voAz2D8fhw==}
+
+  '@types/react-router@5.1.20':
+    resolution: {integrity: sha512-jGjmu/ZqS7FjSH6owMcD5qpq19+1RS9DeVRqfl1FeBMxTDQAGwlMWOcs52NDoXaNKyG3d1cYQFMs9rCrb88o9Q==}
 
   '@types/react-transition-group@4.4.12':
     resolution: {integrity: sha512-8TV6R3h2j7a91c+1DXdJi3Syo69zzIZbz7Lg5tORM5LEJG7X/E6a1V3drRyBRZq7/utz7A+c4OgYLiLcYGHG6w==}
@@ -1479,6 +1498,19 @@ packages:
   react-refresh@0.18.0:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
     engines: {node: '>=0.10.0'}
+
+  react-router-dom@6.30.1:
+    resolution: {integrity: sha512-llKsgOkZdbPU1Eg3zK8lCn+sjD9wMRZZPuzmdWWX5SUs8OFkN5HnFVC0u5KMeMaC9aoancFI/KoLuKPqN+hxHw==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+
+  react-router@6.30.1:
+    resolution: {integrity: sha512-X1m21aEmxGXqENEPG3T6u0Th7g0aS4ZmoNynhbs+Cn+q+QGTLt+d5IQ2bHAXKzKcxGJjxACpVbnYQSCRcfxHlQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
 
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
@@ -2209,6 +2241,8 @@ snapshots:
       react: 19.2.0
       react-redux: 9.2.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
+  '@remix-run/router@1.23.0': {}
+
   '@rolldown/pluginutils@1.0.0-beta.43': {}
 
   '@rollup/rollup-android-arm-eabi@4.52.5':
@@ -2328,6 +2362,8 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/history@4.7.11': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/node@24.10.0':
@@ -2345,6 +2381,17 @@ snapshots:
 
   '@types/react-dom@19.2.2(@types/react@19.2.2)':
     dependencies:
+      '@types/react': 19.2.2
+
+  '@types/react-router-dom@5.3.3':
+    dependencies:
+      '@types/history': 4.7.11
+      '@types/react': 19.2.2
+      '@types/react-router': 5.1.20
+
+  '@types/react-router@5.1.20':
+    dependencies:
+      '@types/history': 4.7.11
       '@types/react': 19.2.2
 
   '@types/react-transition-group@4.4.12(@types/react@19.2.2)':
@@ -3092,6 +3139,18 @@ snapshots:
       redux: 5.0.1
 
   react-refresh@0.18.0: {}
+
+  react-router-dom@6.30.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+    dependencies:
+      '@remix-run/router': 1.23.0
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+      react-router: 6.30.1(react@19.2.0)
+
+  react-router@6.30.1(react@19.2.0):
+    dependencies:
+      '@remix-run/router': 1.23.0
+      react: 19.2.0
 
   react-transition-group@4.4.5(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:

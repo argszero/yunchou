@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { testConnection } from './utils/db.js';
 import initializeDatabase from './database/init.js';
 import decisionProblemsRouter from './routes/decisionProblems.js';
+import problemsRouter from './routes/problems.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,11 +15,9 @@ const PORT = process.env.PORT || 3000;
 // 添加JSON解析中间件
 app.use(express.json());
 
-// 提供静态文件服务
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
 // API路由
 app.use('/api/decision-problems', decisionProblemsRouter);
+app.use('/api/problems', problemsRouter);
 
 // 数据库健康检查接口
 app.get('/api/health/db', async (_req, res) => {
@@ -34,10 +33,16 @@ app.get('/api/health/db', async (_req, res) => {
   }
 });
 
-// 处理SPA路由，所有未匹配的路由都返回index.html
-app.use((_req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
+// 在生产模式下提供静态文件服务
+if (process.env.NODE_ENV === 'production') {
+  // 提供静态文件服务
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+  // 处理SPA路由，所有未匹配的路由都返回index.html
+  app.use((_req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  });
+}
 
 // 启动服务器并初始化数据库
 app.listen(PORT, async () => {

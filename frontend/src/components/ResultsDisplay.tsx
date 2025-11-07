@@ -110,8 +110,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   };
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <Box sx={{ pb: { xs: 2, sm: 0 } }}>
+      <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
         决策结果分析
       </Typography>
 
@@ -122,27 +122,35 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       {/* 排名结果 */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5">
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            mb: 3,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 1, sm: 0 }
+          }}>
+            <Typography variant="h5" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
               方案综合排名
             </Typography>
             <Chip
               label={`总方案数: ${decisionProblem.alternatives.length}`}
               color="primary"
               variant="outlined"
+              size="small"
             />
           </Box>
 
-          <TableContainer component={Paper}>
-            <Table>
+          <TableContainer component={Paper} sx={{ maxWidth: '100%', overflowX: 'auto' }}>
+            <Table sx={{ minWidth: { xs: 400, sm: 600 } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', width: 80 }}>排名</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: { xs: 60, sm: 80 } }}>排名</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>方案名称</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: 120 }} align="center">
+                  <TableCell sx={{ fontWeight: 'bold', width: { xs: 100, sm: 120 } }} align="center">
                     相对贴近度
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: 120 }} align="center">
+                  <TableCell sx={{ fontWeight: 'bold', width: { xs: 80, sm: 120 } }} align="center">
                     评价
                   </TableCell>
                 </TableRow>
@@ -270,8 +278,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </Typography>
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 3
+            gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+            gap: { xs: 2, sm: 3 }
           }}>
             <Box sx={{ textAlign: 'center', p: 2 }}>
               <Typography variant="body2" color="text.secondary">
@@ -317,7 +325,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           <Typography variant="h6" gutterBottom>
             结果操作
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{
+            display: 'flex',
+            gap: { xs: 1, sm: 2 },
+            flexWrap: 'wrap',
+            '& .MuiButton-root': {
+              flex: { xs: '1 1 calc(50% - 8px)', sm: 'none' },
+              minWidth: { xs: 'auto', sm: '120px' }
+            }
+          }}>
             <Button
               startIcon={<Download />}
               variant="contained"

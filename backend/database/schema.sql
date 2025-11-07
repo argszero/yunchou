@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS or_criteria (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     sort_order INT DEFAULT 0, -- 排序字段
+    is_llm_generated BOOLEAN DEFAULT FALSE, -- 是否为LLM自动生成
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (problem_id) REFERENCES or_decision_problems(id) ON DELETE CASCADE,
     INDEX idx_problem_id (problem_id)
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS or_alternatives (
     scores JSON, -- 存储评分数组 [85, 90, 75]
     closeness_coefficient DECIMAL(5,4), -- TOPSIS贴近度系数
     ranking INT, -- 最终排名
+    is_llm_generated BOOLEAN DEFAULT FALSE, -- 是否为LLM自动生成
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (problem_id) REFERENCES or_decision_problems(id) ON DELETE CASCADE,
     INDEX idx_problem_id (problem_id),

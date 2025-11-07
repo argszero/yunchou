@@ -5,11 +5,9 @@ import {
   Button,
   Typography,
   IconButton,
-  CircularProgress,
-  Alert,
-  Collapse
+  CircularProgress
 } from '@mui/material';
-import { Add, Delete, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { Add, Delete } from '@mui/icons-material';
 import type { DecisionProblem, Criterion, Alternative } from '../types';
 import { apiClient } from '../utils/api';
 

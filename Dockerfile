@@ -9,6 +9,7 @@ RUN npm run build
 FROM --platform=linux/amd64 node:lts-alpine
 ENV LANG C.UTF-8
 ENV TIME_ZONE=Asia/Shanghai
+ENV NODE_ENV=production
 
 RUN set -ex \
         && apk -U upgrade \

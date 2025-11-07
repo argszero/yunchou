@@ -71,14 +71,14 @@ class ApiClient {
    * 获取用户的所有决策问题
    */
   async getUserDecisionProblems(): Promise<ApiResponse<DecisionProblem[]>> {
-    return this.request<DecisionProblem[]>('/decision-problems');
+    return this.request<DecisionProblem[]>('/api/decision-problems');
   }
 
   /**
    * 创建新的决策问题
    */
   async createDecisionProblem(problemData: CreateDecisionProblemRequest): Promise<ApiResponse<DecisionProblem>> {
-    return this.request<DecisionProblem>('/decision-problems', {
+    return this.request<DecisionProblem>('/api/decision-problems', {
       method: 'POST',
       body: JSON.stringify(problemData)
     });
@@ -88,14 +88,43 @@ class ApiClient {
    * 获取决策问题详情
    */
   async getDecisionProblem(id: string): Promise<ApiResponse<DecisionProblem>> {
-    return this.request<DecisionProblem>(`/decision-problems/${id}`);
+    return this.request<DecisionProblem>(`/api/decision-problems/${id}`);
+  }
+
+  /**
+   * 获取用户的所有决策问题（新API）
+   */
+  async getProblems(): Promise<DecisionProblem[]> {
+    const response = await this.request<DecisionProblem[]>('/api/problems');
+    return response.data || [];
+  }
+
+  /**
+   * 创建新的决策问题（新API）
+   */
+  async post(url: string, data: any): Promise<any> {
+    const response = await this.request(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    // 新API返回数据直接返回，不需要提取data字段
+    return response;
+  }
+
+  /**
+   * 获取决策问题详情（新API）
+   */
+  async get(url: string): Promise<any> {
+    const response = await this.request(url);
+    // 新API返回数据直接返回，不需要提取data字段
+    return response;
   }
 
   /**
    * 检查数据库健康状态
    */
   async checkDatabaseHealth(): Promise<ApiResponse<{ status: string; message: string }>> {
-    return this.request('/health/db');
+    return this.request('/api/health/db');
   }
 
   /**

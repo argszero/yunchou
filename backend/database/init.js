@@ -3,10 +3,10 @@ import fs from 'fs';
 import path from 'path';
 
 const config = {
-  host: 'args-mysql',
+  host: '39.105.53.16',
   user: 'argszero',
   password: 'Xj9mK2pL5vN8@qR',
-  database: 'args',
+  database: 'or',
   charset: 'utf8mb4'
 };
 

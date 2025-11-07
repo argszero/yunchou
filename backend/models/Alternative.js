@@ -9,7 +9,8 @@ class Alternative {
       description = null,
       scores = null,
       closenessCoefficient = null,
-      ranking = null
+      ranking = null,
+      isLLMGenerated = false
     } = alternativeData;
 
     // 生成UUID
@@ -18,8 +19,8 @@ class Alternative {
 
     const sql = `
       INSERT INTO or_alternatives
-      (id, problem_id, name, description, scores, closeness_coefficient, ranking)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (id, problem_id, name, description, scores, closeness_coefficient, ranking, is_llm_generated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await query(sql, [
@@ -29,7 +30,8 @@ class Alternative {
       description,
       scores ? JSON.stringify(scores) : null,
       closenessCoefficient,
-      ranking
+      ranking,
+      isLLMGenerated
     ]);
 
     return alternativeId;

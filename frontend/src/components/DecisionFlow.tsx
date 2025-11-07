@@ -6,7 +6,6 @@ import {
   StepLabel,
   Button,
   Typography,
-  Paper,
   Alert
 } from '@mui/material';
 import { ProblemDefinition } from './ProblemDefinition';
