@@ -89,7 +89,7 @@ router.post('/', identifyUser, async (req, res) => {
     });
 
     // 创建生成的准则
-    for (const [index, criterion] of generatedContent.criteria.entries()) {
+    for (const criterion of generatedContent.criteria) {
       await Criterion.create({
         problemId,
         name: criterion.name,
@@ -167,6 +167,54 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '获取决策问题失败',
+      error: error.message
+    });
+  }
+});
+
+// 更新决策问题（新API）
+router.put('/:id', identifyUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // 检查问题是否存在
+    const existingProblem = await DecisionProblem.findById(id);
+    if (!existingProblem) {
+      return res.status(404).json({
+        success: false,
+        message: '决策问题不存在'
+      });
+    }
+
+    // 检查用户权限
+    if (existingProblem.user_id !== req.user.user_id) {
+      return res.status(403).json({
+        success: false,
+        message: '无权修改此决策问题'
+      });
+    }
+
+    // 更新问题
+    await DecisionProblem.update(id, updateData);
+
+    // 获取完整的问题详情
+    const fullProblem = await DecisionProblem.getFullProblem(id);
+
+    res.json({
+      id: fullProblem.id,
+      title: fullProblem.title,
+      description: fullProblem.description,
+      status: fullProblem.status || 'draft',
+      createdAt: fullProblem.created_at,
+      criteria: fullProblem.criteria || [],
+      alternatives: fullProblem.alternatives || []
+    });
+  } catch (error) {
+    console.error('Error updating decision problem:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新决策问题失败',
       error: error.message
     });
   }

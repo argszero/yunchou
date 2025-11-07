@@ -230,12 +230,85 @@ export const ProblemDetail: React.FC = () => {
     setActiveTab(newValue);
   };
 
-  // 权重分配处理
+  // 权重分配处理 - 带自动保存
   const handleWeightChange = (criterionId: string, value: number) => {
-    setWeights(prev => ({
-      ...prev,
-      [criterionId]: value
-    }));
+    setWeights(prev => {
+      const newWeights = {
+        ...prev,
+        [criterionId]: value
+      };
+
+      // 更新问题对象的weights数组
+      if (problem) {
+        const updatedWeights = problem.criteria.map((criterion) => {
+          return newWeights[criterion.id] || 0;
+        });
+
+        const updatedProblem = {
+          ...problem,
+          weights: updatedWeights
+        };
+
+        setProblem(updatedProblem);
+        // 异步保存到后端
+        saveProblem(updatedProblem);
+      }
+
+      return newWeights;
+    });
+  };
+
+  // 权重归一化处理 - 带自动保存
+  const normalizeWeights = () => {
+    const currentTotal = getTotalWeight();
+
+    if (currentTotal === 0) return; // 防止除以零
+
+    const normalizedWeights: Record<string, number> = {};
+
+    // 计算归一化权重
+    Object.keys(weights).forEach(key => {
+      normalizedWeights[key] = Math.round((weights[key] / currentTotal) * 100);
+    });
+
+    // 确保归一化后总权重为100%（处理四舍五入误差）
+    const normalizedTotal = Object.values(normalizedWeights).reduce((sum, weight) => sum + weight, 0);
+    if (normalizedTotal !== 100) {
+      // 找到最大的权重项进行调整
+      const maxKey = Object.keys(normalizedWeights).reduce((a, b) =>
+        normalizedWeights[a] > normalizedWeights[b] ? a : b
+      );
+      normalizedWeights[maxKey] += (100 - normalizedTotal);
+    }
+
+    setWeights(normalizedWeights);
+
+    // 更新问题对象的weights数组并保存
+    if (problem) {
+      const updatedWeights = problem.criteria.map((criterion) => {
+        return normalizedWeights[criterion.id] || 0;
+      });
+
+      const updatedProblem = {
+        ...problem,
+        weights: updatedWeights
+      };
+
+      setProblem(updatedProblem);
+      // 异步保存到后端
+      saveProblem(updatedProblem);
+    }
+  };
+
+  // 保存问题到后端
+  const saveProblem = async (updatedProblem: DecisionProblem) => {
+    try {
+      // 使用 PUT 方法更新问题
+      await apiClient.put(`/problems/${id}`, updatedProblem);
+    } catch (err) {
+      console.error('Failed to save problem:', err);
+      // 可以在这里添加错误提示，但为了用户体验，我们不中断操作
+    }
   };
 
   // 方案评分处理
@@ -1406,10 +1479,28 @@ export const ProblemDetail: React.FC = () => {
 
               {/* 权重状态显示 */}
               <Box sx={{ mt: 3, p: 2, bgcolor: getTotalWeight() === 100 ? 'success.light' : 'warning.light', borderRadius: 1 }}>
-                <Typography variant="body2" color={getTotalWeight() === 100 ? 'success.contrastText' : 'warning.contrastText'}>
-                  总权重: {getTotalWeight()}%
-                  {getTotalWeight() === 100 ? ' ✓ 权重分配完成' : ' ⚠ 请调整权重使总和为100%'}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                  <Typography variant="body2" color={getTotalWeight() === 100 ? 'success.contrastText' : 'warning.contrastText'}>
+                    总权重: {getTotalWeight()}%
+                    {getTotalWeight() === 100 ? ' ✓ 权重分配完成' : ' ⚠ 请调整权重使总和为100%'}
+                  </Typography>
+                  {getTotalWeight() !== 100 && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={normalizeWeights}
+                      sx={{
+                        bgcolor: 'white',
+                        color: 'warning.main',
+                        '&:hover': {
+                          bgcolor: 'grey.100'
+                        }
+                      }}
+                    >
+                      自动归一化
+                    </Button>
+                  )}
+                </Box>
               </Box>
             </Box>
           ) : (

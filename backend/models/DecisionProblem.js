@@ -61,6 +61,63 @@ class DecisionProblem {
       alternatives
     };
   }
+
+  // 更新决策问题
+  static async update(id, updateData) {
+    const {
+      title,
+      description,
+      weights,
+      consistencyRatio,
+      isConsistent
+    } = updateData;
+
+    const updates = [];
+    const values = [];
+
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+
+    if (weights !== undefined) {
+      updates.push('weights = ?');
+      values.push(weights ? JSON.stringify(weights) : null);
+    }
+
+    if (consistencyRatio !== undefined) {
+      updates.push('consistency_ratio = ?');
+      values.push(consistencyRatio);
+    }
+
+    if (isConsistent !== undefined) {
+      updates.push('is_consistent = ?');
+      values.push(isConsistent);
+    }
+
+    if (updates.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+
+    const sql = `
+      UPDATE or_decision_problems
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `;
+
+    values.push(id);
+
+    await query(sql, values);
+
+    return await this.findById(id);
+  }
 }
 
 export default DecisionProblem;

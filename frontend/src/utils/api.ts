@@ -121,6 +121,18 @@ class ApiClient {
   }
 
   /**
+   * 更新决策问题（新API）
+   */
+  async put(url: string, data: any): Promise<any> {
+    const response = await this.request(url, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    // 新API返回数据直接返回，不需要提取data字段
+    return response;
+  }
+
+  /**
    * 检查数据库健康状态
    */
   async checkDatabaseHealth(): Promise<ApiResponse<{ status: string; message: string }>> {
