@@ -11,13 +11,15 @@ import {
   TextField,
   Slider,
   Chip,
-  Select,
-  MenuItem,
   Dialog,
   DialogContent,
   IconButton,
   AppBar,
-  Toolbar
+  Toolbar,
+  Card,
+  CardContent,
+  LinearProgress,
+  Fab
 } from '@mui/material';
 import { ArrowBack, Close, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -63,6 +65,8 @@ export const ProblemDetail: React.FC = () => {
   const [ahpMode, setAhpMode] = useState(false);
   const [scoringDialogOpen, setScoringDialogOpen] = useState(false);
   const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0);
+  const [ahpFullScreenMode, setAhpFullScreenMode] = useState(false);
+  const [currentAhpComparison, setCurrentAhpComparison] = useState<{ criterion1: string; criterion2: string } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -194,27 +198,263 @@ export const ProblemDetail: React.FC = () => {
     return Object.values(weights).reduce((sum, weight) => sum + weight, 0);
   };
 
-  // AHP相关函数
-  const handleAhpComparisonChange = (criterion1Id: string, criterion2Id: string, value: number) => {
+  // 计算AHP进度
+  const getAhpProgress = () => {
+    if (!problem || !problem.criteria) return 0;
+
+    const totalComparisons = (problem.criteria.length * (problem.criteria.length - 1)) / 2;
+    let completedComparisons = 0;
+
+    for (let i = 0; i < problem.criteria.length; i++) {
+      for (let j = i + 1; j < problem.criteria.length; j++) {
+        const criterion1 = problem.criteria[i];
+        const criterion2 = problem.criteria[j];
+        if (ahpMatrix[criterion1.id]?.[criterion2.id] !== undefined) {
+          completedComparisons++;
+        }
+      }
+    }
+
+    return (completedComparisons / totalComparisons) * 100;
+  };
+
+  // 初始化AHP比较
+  const initializeAhpComparison = () => {
+    if (!problem || !problem.criteria) return;
+
+    // 找到第一个未完成的比较
+    for (let i = 0; i < problem.criteria.length; i++) {
+      for (let j = i + 1; j < problem.criteria.length; j++) {
+        const criterion1 = problem.criteria[i];
+        const criterion2 = problem.criteria[j];
+        if (ahpMatrix[criterion1.id]?.[criterion2.id] === undefined) {
+          setCurrentAhpComparison({ criterion1: criterion1.id, criterion2: criterion2.id });
+          setAhpFullScreenMode(true);
+          return;
+        }
+      }
+    }
+
+    // 如果所有比较都已完成，显示第一个比较
+    if (problem.criteria.length >= 2) {
+      setCurrentAhpComparison({
+        criterion1: problem.criteria[0].id,
+        criterion2: problem.criteria[1].id
+      });
+      setAhpFullScreenMode(true);
+    }
+  };
+
+  // 获取下一个AHP比较
+  const getNextAhpComparison = () => {
+    if (!problem || !problem.criteria || !currentAhpComparison) return null;
+
+    const allComparisons: { criterion1: string; criterion2: string }[] = [];
+    for (let i = 0; i < problem.criteria.length; i++) {
+      for (let j = i + 1; j < problem.criteria.length; j++) {
+        allComparisons.push({
+          criterion1: problem.criteria[i].id,
+          criterion2: problem.criteria[j].id
+        });
+      }
+    }
+
+    const currentIndex = allComparisons.findIndex(
+      c => c.criterion1 === currentAhpComparison.criterion1 &&
+           c.criterion2 === currentAhpComparison.criterion2
+    );
+
+    if (currentIndex < allComparisons.length - 1) {
+      return allComparisons[currentIndex + 1];
+    }
+    return null;
+  };
+
+  // 处理AHP比较值变化（全屏模式）
+  const handleAhpComparisonChange = (value: number) => {
+    if (!currentAhpComparison) return;
+
+    const { criterion1, criterion2 } = currentAhpComparison;
     setAhpMatrix(prev => ({
       ...prev,
-      [criterion1Id]: {
-        ...prev[criterion1Id],
-        [criterion2Id]: value
+      [criterion1]: {
+        ...prev[criterion1],
+        [criterion2]: value
       }
     }));
 
     // 自动设置对称值
-    if (criterion1Id !== criterion2Id) {
+    setAhpMatrix(prev => ({
+      ...prev,
+      [criterion2]: {
+        ...prev[criterion2],
+        [criterion1]: 1 / value
+      }
+    }));
+  };
+
+  // 处理下一个AHP比较
+  const handleNextAhpComparison = () => {
+    const next = getNextAhpComparison();
+    if (next) {
+      setCurrentAhpComparison(next);
+    } else {
+      // 所有比较完成，计算权重
+      calculateAhpWeights();
+      setAhpFullScreenMode(false);
+    }
+  };
+
+  // 滑动值到AHP重要性值的转换函数
+  const sliderValueToAhpValue = (sliderValue: number): number => {
+    // 滑动值范围: -100 到 100
+    // 映射到AHP重要性值: 1/9 到 9
+
+    if (sliderValue === 0) return 1; // 中间位置，同等重要
+
+    if (sliderValue > 0) {
+      // 向右滑动，上方准则更重要
+      const normalizedValue = sliderValue / 100;
+      if (normalizedValue <= 0.2) return 2;      // 稍微重要
+      if (normalizedValue <= 0.4) return 3;      // 明显重要
+      if (normalizedValue <= 0.6) return 5;      // 强烈重要
+      if (normalizedValue <= 0.8) return 7;      // 非常重要
+      return 9;                                  // 极端重要
+    } else {
+      // 向左滑动，下方准则更重要
+      const normalizedValue = Math.abs(sliderValue) / 100;
+      if (normalizedValue <= 0.2) return 1/2;    // 稍微重要
+      if (normalizedValue <= 0.4) return 1/3;    // 明显重要
+      if (normalizedValue <= 0.6) return 1/5;    // 强烈重要
+      if (normalizedValue <= 0.8) return 1/7;    // 非常重要
+      return 1/9;                                // 极端重要
+    }
+  };
+
+  // AHP重要性值到滑动值的转换函数
+  const ahpValueToSliderValue = (ahpValue: number): number => {
+    if (ahpValue === 1) return 0; // 同等重要
+
+    if (ahpValue > 1) {
+      // 上方准则更重要
+      switch (ahpValue) {
+        case 2: return 20;   // 稍微重要
+        case 3: return 40;   // 明显重要
+        case 5: return 60;   // 强烈重要
+        case 7: return 80;   // 非常重要
+        case 9: return 100;  // 极端重要
+        default: return Math.min(100, (ahpValue - 1) * 12.5);
+      }
+    } else {
+      // 下方准则更重要
+      const reciprocal = 1 / ahpValue;
+      switch (reciprocal) {
+        case 2: return -20;   // 稍微重要
+        case 3: return -40;   // 明显重要
+        case 5: return -60;   // 强烈重要
+        case 7: return -80;   // 非常重要
+        case 9: return -100;  // 极端重要
+        default: return Math.max(-100, -(reciprocal - 1) * 12.5);
+      }
+    }
+  };
+
+  // 滑动处理函数
+  const handleSliderChange = (_event: Event, newValue: number | number[]) => {
+    if (currentAhpComparison) {
+      const sliderValue = Array.isArray(newValue) ? newValue[0] : newValue;
+      const ahpValue = sliderValueToAhpValue(sliderValue);
+
+      // 更新AHP矩阵
       setAhpMatrix(prev => ({
         ...prev,
-        [criterion2Id]: {
-          ...prev[criterion2Id],
-          [criterion1Id]: 1 / value
+        [currentAhpComparison.criterion1]: {
+          ...prev[currentAhpComparison.criterion1],
+          [currentAhpComparison.criterion2]: ahpValue
+        },
+        [currentAhpComparison.criterion2]: {
+          ...prev[currentAhpComparison.criterion2],
+          [currentAhpComparison.criterion1]: 1 / ahpValue
         }
       }));
     }
   };
+
+  // AHP重要性级别辅助函数
+  const getImportanceText = (value: number): string => {
+    const absValue = Math.abs(value);
+    if (absValue === 1) return '同等重要';
+    if (absValue === 2) return '稍微重要';
+    if (absValue === 3) return '明显重要';
+    if (absValue === 5) return '强烈重要';
+    if (absValue === 7) return '非常重要';
+    if (absValue === 9) return '极端重要';
+    return '同等重要';
+  };
+
+
+
+
+
+  // 获取准则大小缩放比例
+  const getCardScale = (value: number, side: 'left' | 'right'): number => {
+    if (value === 1) return 1; // 同等重要
+
+    if (side === 'left' && value > 1) {
+      // 上方准则更重要
+      switch (value) {
+        case 2: return 1.05;  // 稍微重要
+        case 3: return 1.1;   // 明显重要
+        case 5: return 1.15;  // 强烈重要
+        case 7: return 1.2;   // 非常重要
+        case 9: return 1.25;  // 极端重要
+        default: return 1 + (value - 1) * 0.03;
+      }
+    } else if (side === 'right' && value < 1) {
+      // 下方准则更重要
+      const reciprocal = 1 / value;
+      switch (reciprocal) {
+        case 2: return 1.05;  // 稍微重要
+        case 3: return 1.1;   // 明显重要
+        case 5: return 1.15;  // 强烈重要
+        case 7: return 1.2;   // 非常重要
+        case 9: return 1.25;  // 极端重要
+        default: return 1 + (reciprocal - 1) * 0.03;
+      }
+    } else {
+      // 当前准则不重要
+      if (value > 1) {
+        // 上方准则更重要，下方准则不重要
+        switch (value) {
+          case 2: return 0.95;  // 稍微不重要
+          case 3: return 0.9;   // 明显不重要
+          case 5: return 0.85;  // 强烈不重要
+          case 7: return 0.8;   // 非常不重要
+          case 9: return 0.75;  // 极端不重要
+          default: return 1 - (value - 1) * 0.03;
+        }
+      } else {
+        // 下方准则更重要，上方准则不重要
+        const reciprocal = 1 / value;
+        switch (reciprocal) {
+          case 2: return 0.95;  // 稍微不重要
+          case 3: return 0.9;   // 明显不重要
+          case 5: return 0.85;  // 强烈不重要
+          case 7: return 0.8;   // 非常不重要
+          case 9: return 0.75;  // 极端不重要
+          default: return 1 - (reciprocal - 1) * 0.03;
+        }
+      }
+    }
+  };
+
+  const getCurrentSelectionText = (value: number): string => {
+    if (value === 1) return '当前选择：同等重要';
+    if (value > 1) return '当前选择：上方准则更重要';
+    return '当前选择：下方准则更重要';
+  };
+
+
 
   // 计算AHP权重
   const calculateAhpWeights = () => {
@@ -486,86 +726,88 @@ export const ProblemDetail: React.FC = () => {
                   ))}
                 </Box>
               ) : (
-                // AHP模式
+                // AHP模式 - 全屏卡片式设计
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                     使用1-9标度法进行两两比较，回答类似问题："准则A和准则B相比，哪个更重要？重要多少？"
                   </Typography>
 
-                  <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 1 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
-                      两两比较矩阵
-                    </Typography>
+                  {/* 全屏AHP比较卡片 */}
+                  <Card sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setAhpFullScreenMode(true)}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            🎯 AHP权重分配
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            点击开始比较准则重要性
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary.main">
+                            {Math.round(getAhpProgress())}%
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            完成进度
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={getAhpProgress()}
+                        sx={{ mt: 2, height: 6, borderRadius: 3 }}
+                      />
+                    </CardContent>
+                  </Card>
 
-                    {/* AHP比较表格 */}
-                    <Box sx={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e0e0e0' }}></th>
-                            {problem.criteria.map((criterion) => (
-                              <th key={criterion.id} style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e0e0e0' }}>
+                  {/* 权重可视化预览 */}
+                  {Object.keys(weights).length > 0 && (
+                    <Card sx={{ mb: 3 }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                          📊 当前权重分布
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {problem.criteria.map((criterion) => (
+                            <Box
+                              key={criterion.id}
+                              sx={{
+                                flex: `0 0 calc(50% - 4px)`,
+                                textAlign: 'center',
+                                p: 1,
+                                bgcolor: 'primary.50',
+                                borderRadius: 1
+                              }}
+                            >
+                              <Typography variant="body2" fontWeight="medium">
                                 {criterion.name}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {problem.criteria.map((criterion1, i) => (
-                            <tr key={criterion1.id}>
-                              <td style={{ padding: '8px', fontWeight: 500, borderBottom: '1px solid #e0e0e0' }}>
-                                {criterion1.name}
-                              </td>
-                              {problem.criteria.map((criterion2, j) => (
-                                <td key={criterion2.id} style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e0e0e0' }}>
-                                  {i === j ? (
-                                    <Typography variant="body2" color="text.secondary">
-                                      1
-                                    </Typography>
-                                  ) : (
-                                    <Select
-                                      size="small"
-                                      value={ahpMatrix[criterion1.id]?.[criterion2.id] || 1}
-                                      onChange={(e) => handleAhpComparisonChange(criterion1.id, criterion2.id, Number(e.target.value))}
-                                      sx={{ minWidth: 80 }}
-                                    >
-                                      <MenuItem value={9}>9 (极重要)</MenuItem>
-                                      <MenuItem value={8}>8</MenuItem>
-                                      <MenuItem value={7}>7 (很重要)</MenuItem>
-                                      <MenuItem value={6}>6</MenuItem>
-                                      <MenuItem value={5}>5 (重要)</MenuItem>
-                                      <MenuItem value={4}>4</MenuItem>
-                                      <MenuItem value={3}>3 (稍重要)</MenuItem>
-                                      <MenuItem value={2}>2</MenuItem>
-                                      <MenuItem value={1}>1 (同等重要)</MenuItem>
-                                      <MenuItem value={1/2}>1/2</MenuItem>
-                                      <MenuItem value={1/3}>1/3 (稍不重要)</MenuItem>
-                                      <MenuItem value={1/4}>1/4</MenuItem>
-                                      <MenuItem value={1/5}>1/5 (不重要)</MenuItem>
-                                      <MenuItem value={1/6}>1/6</MenuItem>
-                                      <MenuItem value={1/7}>1/7 (很不重要)</MenuItem>
-                                      <MenuItem value={1/8}>1/8</MenuItem>
-                                      <MenuItem value={1/9}>1/9 (极不重要)</MenuItem>
-                                    </Select>
-                                  )}
-                                </td>
-                              ))}
-                            </tr>
+                              </Typography>
+                              <Typography variant="h6" color="primary.main">
+                                {Math.round(weights[criterion.id] * 100)}%
+                              </Typography>
+                            </Box>
                           ))}
-                        </tbody>
-                      </table>
-                    </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                      <Button
-                        variant="contained"
-                        onClick={calculateAhpWeights}
-                        size="large"
-                      >
-                        计算AHP权重
-                      </Button>
-                    </Box>
-                  </Paper>
+                  {/* 开始比较按钮 */}
+                  <Fab
+                    variant="extended"
+                    color="primary"
+                    onClick={initializeAhpComparison}
+                    sx={{
+                      position: 'fixed',
+                      bottom: 16,
+                      right: 16,
+                      zIndex: 1000
+                    }}
+                  >
+                    <NavigateNext sx={{ mr: 1 }} />
+                    开始比较
+                  </Fab>
 
                   {/* AHP说明 */}
                   <Paper elevation={0} sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
@@ -966,6 +1208,160 @@ export const ProblemDetail: React.FC = () => {
           )}
         </TabPanel>
       </Paper>
-    </Box>
-  );
-};
+
+      {/* 全屏AHP比较对话框 */}
+      <Dialog
+        fullScreen
+        open={ahpFullScreenMode}
+        onClose={() => setAhpFullScreenMode(false)}
+      >
+        <AppBar position="sticky">
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={() => setAhpFullScreenMode(false)}>
+              <Close />
+            </IconButton>
+            <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>
+              准则重要性比较
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2">
+                {Math.round(getAhpProgress())}%
+              </Typography>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        {currentAhpComparison && (
+          <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+            {/* 进度条 */}
+            <Box sx={{ px: 2, py: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={getAhpProgress()}
+                sx={{ height: 6, borderRadius: 3 }}
+              />
+            </Box>
+
+            {/* 当前选择状态 */}
+            <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="body1" align="center" color="primary.main" fontWeight="bold">
+                {getCurrentSelectionText(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1)}
+              </Typography>
+              <Typography variant="body2" align="center" color="text.secondary">
+                {getImportanceText(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1)}
+              </Typography>
+            </Box>
+
+            {/* 比较界面 */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', px: 2 }}>
+              {/* 上方准则 */}
+              <Box
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  bgcolor: 'primary.light',
+                  color: 'white',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  transform: `scale(${getCardScale(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1, 'left')})`,
+                  mb: 2,
+                }}
+              >
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.name}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.description}
+                </Typography>
+              </Box>
+
+              {/* 滑动条区域 */}
+              <Box sx={{ px: 2, py: 3 }}>
+                {/* 双色滑动条 */}
+                <Slider
+                  value={ahpValueToSliderValue(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1)}
+                  onChange={handleSliderChange}
+                  min={-100}
+                  max={100}
+                  step={1}
+                  sx={{
+                    color: 'transparent',
+                    height: 8,
+                    '& .MuiSlider-track': {
+                      background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
+                      border: 'none',
+                    },
+                    '& .MuiSlider-rail': {
+                      background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
+                      opacity: 0.3,
+                    },
+                    '& .MuiSlider-thumb': {
+                      height: 24,
+                      width: 24,
+                      backgroundColor: '#fff',
+                      border: '2px solid currentColor',
+                      '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+                        boxShadow: 'inherit',
+                      },
+                    },
+                  }}
+                />
+
+                {/* 滑动条标签 */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                  <Typography variant="body2" color="success.main" fontWeight="bold">
+                    {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.name}更重要
+                  </Typography>
+                  <Typography variant="body2" color="primary.main" fontWeight="bold">
+                    {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.name}更重要
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* 下方准则 */}
+              <Box
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  bgcolor: 'secondary.light',
+                  color: 'white',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  transform: `scale(${getCardScale(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1, 'right')})`,
+                  mt: 2,
+                }}
+              >
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.name}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.description}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* 底部导航 */}
+            <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
+              <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => handleAhpComparisonChange(1)}
+                  startIcon={<NavigateBefore />}
+                >
+                  重置为同等重要
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleNextAhpComparison}
+                  endIcon={<NavigateNext />}
+                >
+                  {getNextAhpComparison() ? '继续比较' : '完成比较'}
+                </Button>
+            </Box>
+          </Box>
+          )}
+        </Dialog>
+      </Box>
+    );
+  };

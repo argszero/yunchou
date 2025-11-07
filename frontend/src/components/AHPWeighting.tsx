@@ -6,12 +6,15 @@ import {
   CardContent,
   Slider,
   Alert,
-  Grid,
   Button,
   Chip,
-  LinearProgress
+  LinearProgress,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Fab
 } from '@mui/material';
-import { CheckCircle, Warning } from '@mui/icons-material';
+import { CheckCircle, Warning, Close, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import type { Criterion } from '../types';
 import { calculateAHPWeights } from '../utils/ahpCalculator';
 import type { PairwiseComparison } from '../utils/ahpCalculator';
@@ -32,6 +35,7 @@ export const AHPWeighting: React.FC<AHPWeightingProps> = ({
   const [weights, setWeights] = useState<number[]>([]);
   const [consistencyRatio, setConsistencyRatio] = useState<number>(0);
   const [isConsistent, setIsConsistent] = useState<boolean>(false);
+  const [fullScreenMode, setFullScreenMode] = useState<boolean>(false);
 
   // 初始化比较对
   useEffect(() => {
@@ -134,6 +138,14 @@ export const AHPWeighting: React.FC<AHPWeightingProps> = ({
     return '';
   };
 
+  const openFullScreenComparison = () => {
+    setFullScreenMode(true);
+  };
+
+  const closeFullScreenComparison = () => {
+    setFullScreenMode(false);
+  };
+
   if (!currentComparison) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -148,183 +160,267 @@ export const AHPWeighting: React.FC<AHPWeightingProps> = ({
   const criterion1 = criteria[currentComparison.row];
   const criterion2 = criteria[currentComparison.col];
 
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        准则权重分配 (AHP方法)
-      </Typography>
+  // 全屏比较模式
+  if (fullScreenMode) {
+    return (
+      <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+        {/* 顶部导航栏 */}
+        <AppBar position="static" elevation={1}>
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={closeFullScreenComparison}>
+              <Close />
+            </IconButton>
+            <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>
+              准则重要性比较
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2">
+                {comparisons.length + 1}/{(criteria.length * (criteria.length - 1)) / 2}
+              </Typography>
+            </Box>
+          </Toolbar>
+        </AppBar>
 
-      {/* 进度指示器 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              比较进度
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {Math.round(getProgress())}%
-            </Typography>
-          </Box>
+        {/* 进度条 */}
+        <Box sx={{ px: 2, py: 1 }}>
           <LinearProgress
             variant="determinate"
             value={getProgress()}
-            sx={{ height: 8, borderRadius: 4 }}
+            sx={{ height: 6, borderRadius: 3 }}
           />
-        </CardContent>
-      </Card>
+        </Box>
 
-      {/* 当前比较 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom align="center">
-            请比较以下两个准则的重要性
-          </Typography>
-
-          <Grid container spacing={4} alignItems="center" sx={{ mb: 3 }}>
-            <Grid component="div" sx={{ width: { xs: '100%', md: '40%' } }}>
-              <Card
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText'
-                }}
-              >
-                <Typography variant="h6">
-                  {criterion1.name}
-                </Typography>
-                <Typography variant="body2">
-                  {criterion1.description}
-                </Typography>
-              </Card>
-            </Grid>
-
-            <Grid component="div" sx={{ width: { xs: '100%', md: '20%' }, textAlign: 'center' }}>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 'bold',
-                  color: 'primary.main'
-                }}
-              >
-                VS
-              </Typography>
-            </Grid>
-
-            <Grid component="div" sx={{ width: { xs: '100%', md: '40%' } }}>
-              <Card
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  bgcolor: 'secondary.light',
-                  color: 'secondary.contrastText'
-                }}
-              >
-                <Typography variant="h6">
-                  {criterion2.name}
-                </Typography>
-                <Typography variant="body2">
-                  {criterion2.description}
-                </Typography>
-              </Card>
-            </Grid>
-          </Grid>
-
-          {/* 重要性滑动条 */}
-          <Box sx={{ px: 2 }}>
-            <Typography gutterBottom align="center">
-              <strong>{getComparisonText(currentValue)}</strong>
+        {/* 比较卡片 */}
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', px: 3, gap: 3 }}>
+          {/* 准则A卡片 */}
+          <Card
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              borderRadius: 3,
+              boxShadow: 3,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:active': {
+                transform: 'scale(0.98)',
+                bgcolor: 'primary.dark'
+              }
+            }}
+            onClick={() => handleComparisonChange(Math.max(1, Math.min(9, currentValue + 0.5)))}
+          >
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              {criterion1.name}
             </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              {criterion1.description}
+            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                点击选择此项更重要
+              </Typography>
+            </Box>
+          </Card>
+
+          {/* 比较指示器 */}
+          <Box sx={{ textAlign: 'center', py: 1 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 'bold',
+                color: 'text.secondary',
+                bgcolor: 'background.paper',
+                py: 1,
+                px: 3,
+                borderRadius: 2,
+                display: 'inline-block'
+              }}
+            >
+              VS
+            </Typography>
+          </Box>
+
+          {/* 准则B卡片 */}
+          <Card
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              bgcolor: 'secondary.main',
+              color: 'secondary.contrastText',
+              borderRadius: 3,
+              boxShadow: 3,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:active': {
+                transform: 'scale(0.98)',
+                bgcolor: 'secondary.dark'
+              }
+            }}
+            onClick={() => handleComparisonChange(Math.max(1/9, Math.min(1, currentValue - 0.5)))}
+          >
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              {criterion2.name}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              {criterion2.description}
+            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                点击选择此项更重要
+              </Typography>
+            </Box>
+          </Card>
+
+          {/* 当前重要性显示 */}
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="h6" color="primary.main" fontWeight="bold">
+              {getComparisonText(currentValue)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              当前重要性: {currentValue.toFixed(1)}
+            </Typography>
+          </Box>
+
+          {/* 精细调整滑块 */}
+          <Box sx={{ px: 2, pb: 2 }}>
             <Slider
               value={currentValue}
               onChange={(_, value) => handleComparisonChange(value as number)}
               min={1/9}
               max={9}
               step={0.1}
-              marks={[
-                { value: 1/9, label: '1/9' },
-                { value: 1/3, label: '1/3' },
-                { value: 1, label: '1' },
-                { value: 3, label: '3' },
-                { value: 9, label: '9' }
-              ]}
               valueLabelDisplay="auto"
               valueLabelFormat={(value) => value.toFixed(1)}
               sx={{
-                '& .MuiSlider-markLabel': {
-                  fontSize: '0.75rem'
+                color: 'primary.main',
+                '& .MuiSlider-thumb': {
+                  width: 20,
+                  height: 20
                 }
               }}
             />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                {criterion2.name} 更重要
+          </Box>
+        </Box>
+
+        {/* 底部导航 */}
+        <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => handleComparisonChange(1)}
+            startIcon={<NavigateBefore />}
+          >
+            重置为同等重要
+          </Button>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleNextComparison}
+            disabled={comparisons.length === 0}
+            endIcon={<NavigateNext />}
+          >
+            {getNextComparison() ? '继续比较' : '完成比较'}
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // 常规模式
+  return (
+    <Box>
+      {/* 快速概览卡片 */}
+      <Card sx={{ mb: 3, cursor: 'pointer' }} onClick={openFullScreenComparison}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                🎯 AHP权重分配
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                同等重要
+                点击开始比较准则重要性
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {criterion1.name} 更重要
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="primary.main">
+                {Math.round(getProgress())}%
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                完成进度
               </Typography>
             </Box>
           </Box>
+          <LinearProgress
+            variant="determinate"
+            value={getProgress()}
+            sx={{ mt: 2, height: 6, borderRadius: 3 }}
+          />
         </CardContent>
       </Card>
 
-      {/* 权重结果 */}
+      {/* 权重可视化预览 */}
       {weights.length > 0 && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
-                当前权重分配
+                📊 当前权重分布
               </Typography>
               <Chip
                 icon={isConsistent ? <CheckCircle /> : <Warning />}
-                label={`一致性比率: ${(consistencyRatio * 100).toFixed(1)}%`}
+                label={`一致性: ${(consistencyRatio * 100).toFixed(1)}%`}
                 color={isConsistent ? 'success' : 'warning'}
-                variant="outlined"
+                size="small"
               />
             </Box>
 
-            <Grid container spacing={2}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {criteria.map((criterion, index) => (
-                <Grid component="div" sx={{ width: { xs: '100%', sm: '50%', md: '33.333%' } }} key={criterion.id}>
-                  <Card
-                    variant="outlined"
-                    sx={{ p: 2, textAlign: 'center' }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      {criterion.name}
-                    </Typography>
-                    <Typography variant="h6" color="primary.main">
-                      {(weights[index] * 100).toFixed(1)}%
-                    </Typography>
-                  </Card>
-                </Grid>
+                <Box
+                  key={criterion.id}
+                  sx={{
+                    flex: `0 0 calc(50% - 4px)`,
+                    textAlign: 'center',
+                    p: 1,
+                    bgcolor: 'primary.50',
+                    borderRadius: 1
+                  }}
+                >
+                  <Typography variant="body2" fontWeight="medium">
+                    {criterion.name}
+                  </Typography>
+                  <Typography variant="h6" color="primary.main">
+                    {(weights[index] * 100).toFixed(0)}%
+                  </Typography>
+                </Box>
               ))}
-            </Grid>
+            </Box>
 
             {!isConsistent && (
               <Alert severity="warning" sx={{ mt: 2 }}>
-                当前权重分配的一致性比率较高 ({consistencyRatio.toFixed(3)})，建议重新调整比较值以获得更一致的结果。
+                建议重新调整比较值以获得更一致的结果
               </Alert>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* 导航按钮 */}
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleNextComparison}
-          disabled={comparisons.length === 0}
-        >
-          {getNextComparison() ? '继续下一个比较' : '确认权重并继续'}
-        </Button>
-      </Box>
+      {/* 开始比较按钮 */}
+      <Fab
+        variant="extended"
+        color="primary"
+        onClick={openFullScreenComparison}
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 1000
+        }}
+      >
+        <NavigateNext sx={{ mr: 1 }} />
+        开始比较
+      </Fab>
     </Box>
   );
 };
