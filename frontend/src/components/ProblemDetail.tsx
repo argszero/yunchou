@@ -1287,13 +1287,13 @@ export const ProblemDetail: React.FC = () => {
                   sx={{
                     color: 'transparent',
                     height: 8,
-                    '& .MuiSlider-track': {
-                      background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
-                      border: 'none',
-                    },
+                    // '& .MuiSlider-track': {
+                    //   background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
+                    //   border: 'none',
+                    // },
                     '& .MuiSlider-rail': {
                       background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
-                      opacity: 0.3,
+                      opacity: 0.9,
                     },
                     '& .MuiSlider-thumb': {
                       height: 24,
