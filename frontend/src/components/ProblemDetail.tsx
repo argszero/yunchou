@@ -632,11 +632,6 @@ export const ProblemDetail: React.FC = () => {
                   <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                     {criterion.name}
                   </Typography>
-                  {criterion.description && (
-                    <Typography variant="body2" color="text.secondary">
-                      {criterion.description}
-                    </Typography>
-                  )}
                 </Paper>
               ))}
             </Box>
@@ -663,11 +658,6 @@ export const ProblemDetail: React.FC = () => {
                   <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                     {alternative.name}
                   </Typography>
-                  {alternative.description && (
-                    <Typography variant="body2" color="text.secondary">
-                      {alternative.description}
-                    </Typography>
-                  )}
                 </Paper>
               ))}
             </Box>
@@ -999,11 +989,6 @@ export const ProblemDetail: React.FC = () => {
                           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
                             {problem.alternatives[currentAlternativeIndex].name}
                           </Typography>
-                          {problem.alternatives[currentAlternativeIndex].description && (
-                            <Typography variant="h6" color="text.secondary">
-                              {problem.alternatives[currentAlternativeIndex].description}
-                            </Typography>
-                          )}
 
                           {/* 总体进度 */}
                           <Box sx={{ mt: 3, maxWidth: 400, mx: 'auto' }}>
@@ -1171,11 +1156,6 @@ export const ProblemDetail: React.FC = () => {
                           <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                             {result.alternative.name}
                           </Typography>
-                          {result.alternative.description && (
-                            <Typography variant="body2" color="text.secondary">
-                              {result.alternative.description}
-                            </Typography>
-                          )}
                         </Box>
                         <Box sx={{ flex: 1, textAlign: { xs: 'left', sm: 'center' } }}>
                           <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
@@ -1298,11 +1278,8 @@ export const ProblemDetail: React.FC = () => {
                   mb: 2,
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Typography variant="h6" fontWeight="bold">
                   {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.name}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.description}
                 </Typography>
               </Box>
 
@@ -1362,11 +1339,8 @@ export const ProblemDetail: React.FC = () => {
                   mt: 2,
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Typography variant="h6" fontWeight="bold">
                   {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.name}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.description}
                 </Typography>
               </Box>
             </Box>
