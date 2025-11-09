@@ -89,7 +89,7 @@ router.post('/', identifyUser, async (req, res) => {
     });
 
     // 创建生成的准则
-    for (const criterion of generatedContent.criteria) {
+    for (const [index, criterion] of generatedContent.criteria.entries()) {
       await Criterion.create({
         problemId,
         name: criterion.name,
@@ -100,7 +100,7 @@ router.post('/', identifyUser, async (req, res) => {
     }
 
     // 创建生成的备选方案（包含默认评分）
-    for (const [index, alternative] of generatedContent.alternatives.entries()) {
+    for (const alternative of generatedContent.alternatives) {
       // 将默认评分转换为数组格式
       const defaultScores = generatedContent.criteria.map(criterion => {
         return alternative.defaultScores?.[criterion.name] || 50; // 默认为50分
