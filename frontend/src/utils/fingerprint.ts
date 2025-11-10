@@ -26,7 +26,7 @@ export class FingerprintManager {
   /**
    * 生成指纹数据
    */
-  generateFingerprint(): FingerprintData {
+  async generateFingerprint(): Promise<FingerprintData> {
     const userAgent = navigator.userAgent;
     const screenResolution = `${screen.width}x${screen.height}`;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -46,15 +46,12 @@ export class FingerprintManager {
       deviceMemory
     ].join('|');
 
-    // 生成简单哈希（前端不需要强加密）
-    let hash = 0;
-    for (let i = 0; i < fingerprintString.length; i++) {
-      const char = fingerprintString.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // 转换为32位整数
-    }
-
-    const fingerprintHash = Math.abs(hash).toString(16);
+    // 使用SHA256哈希算法（与后端保持一致）
+    const encoder = new TextEncoder();
+    const data = encoder.encode(fingerprintString);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const fingerprintHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     this.fingerprintData = {
       fingerprintHash,
@@ -73,7 +70,7 @@ export class FingerprintManager {
   /**
    * 获取指纹数据（从存储或生成）
    */
-  getFingerprint(): FingerprintData {
+  async getFingerprint(): Promise<FingerprintData> {
     // 首先尝试从localStorage获取
     const storedFingerprint = localStorage.getItem(this.storageKey);
     if (storedFingerprint) {
@@ -87,7 +84,7 @@ export class FingerprintManager {
     }
 
     // 生成新的指纹数据
-    const newFingerprint = this.generateFingerprint();
+    const newFingerprint = await this.generateFingerprint();
 
     // 存储到localStorage
     localStorage.setItem(this.storageKey, JSON.stringify(newFingerprint));
@@ -106,8 +103,8 @@ export class FingerprintManager {
   /**
    * 获取请求头信息（用于API调用）
    */
-  getRequestHeaders(): Record<string, string> {
-    const fingerprint = this.getFingerprint();
+  async getRequestHeaders(): Promise<Record<string, string>> {
+    const fingerprint = await this.getFingerprint();
     return {
       'X-Fingerprint-Hash': fingerprint.fingerprintHash,
       'X-Screen-Resolution': fingerprint.screenResolution,
@@ -119,9 +116,9 @@ export class FingerprintManager {
   /**
    * 验证指纹是否有效
    */
-  isValid(): boolean {
+  async isValid(): Promise<boolean> {
     try {
-      const fingerprint = this.getFingerprint();
+      const fingerprint = await this.getFingerprint();
       return !!(fingerprint && fingerprint.fingerprintHash);
     } catch {
       return false;

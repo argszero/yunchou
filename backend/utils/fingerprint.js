@@ -14,8 +14,16 @@ export function generateFingerprintData(req) {
   const timezone = req.headers['x-timezone'] || 'unknown';
   const language = req.headers['x-language'] || acceptLanguage.split(',')[0] || 'unknown';
 
-  // 生成指纹哈希
-  const fingerprintString = `${userAgent}${screenResolution}${timezone}${language}`;
+  // 生成指纹哈希（使用与前端相同的格式）
+  const fingerprintString = [
+    userAgent,
+    screenResolution,
+    timezone,
+    language,
+    'unknown', // platform (前端有，但后端无法获取)
+    'unknown', // hardwareConcurrency (前端有，但后端无法获取)
+    'unknown'  // deviceMemory (前端有，但后端无法获取)
+  ].join('|');
   const fingerprintHash = crypto.createHash('sha256').update(fingerprintString).digest('hex');
 
   return {

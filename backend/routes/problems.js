@@ -15,10 +15,9 @@ const identifyUser = async (req, res, next) => {
     const fingerprintData = generateFingerprintData(req);
 
     if (!validateFingerprintData(fingerprintData)) {
-      return res.status(400).json({
-        success: false,
-        message: '无效的指纹数据'
-      });
+      console.warn('Invalid fingerprint data, continuing without user identification');
+      req.user = null;
+      return next();
     }
 
     // 查找或创建用户
@@ -38,6 +37,14 @@ const identifyUser = async (req, res, next) => {
 // 获取用户的所有决策问题（新API）
 router.get('/', identifyUser, async (req, res) => {
   try {
+    // 如果没有用户识别，返回空列表
+    if (!req.user || !req.user.user_id) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
     const problems = await User.getUserDecisionProblems(req.user.user_id);
 
     // 转换格式以匹配前端期望
@@ -49,7 +56,7 @@ router.get('/', identifyUser, async (req, res) => {
       createdAt: problem.created_at,
       criteria: problem.criteria || [],
       alternatives: problem.alternatives || [],
-      isOwner: problem.user_id === req.user.user_id
+      isOwner: req.user ? problem.user_id === req.user.user_id : false
     }));
 
     res.json({
@@ -75,6 +82,14 @@ router.post('/', identifyUser, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: '决策问题标题不能为空'
+      });
+    }
+
+    // 检查用户识别
+    if (!req.user || !req.user.user_id) {
+      return res.status(400).json({
+        success: false,
+        message: '用户识别失败，无法创建决策问题'
       });
     }
 
@@ -142,7 +157,7 @@ router.post('/', identifyUser, async (req, res) => {
 });
 
 // 获取决策问题详情（新API）
-router.get('/:id', async (req, res) => {
+router.get('/:id', identifyUser, async (req, res) => {
   try {
     const { id } = req.params;
     const problem = await DecisionProblem.getFullProblem(id);
@@ -154,6 +169,11 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // 记录用户参与（如果不是创建者且用户识别成功）
+    if (req.user && problem.user_id !== req.user.user_id) {
+      await User.addParticipation(req.user.user_id, id);
+    }
+
     // 转换格式以匹配前端期望
     const formattedProblem = {
       id: problem.id,
@@ -162,7 +182,8 @@ router.get('/:id', async (req, res) => {
       status: problem.status || 'draft',
       createdAt: problem.created_at,
       criteria: problem.criteria || [],
-      alternatives: problem.alternatives || []
+      alternatives: problem.alternatives || [],
+      isOwner: req.user ? problem.user_id === req.user.user_id : false
     };
 
     res.json(formattedProblem);
@@ -192,7 +213,7 @@ router.put('/:id', identifyUser, async (req, res) => {
     }
 
     // 检查用户权限
-    if (existingProblem.user_id !== req.user.user_id) {
+    if (!req.user || !req.user.user_id || existingProblem.user_id !== req.user.user_id) {
       return res.status(403).json({
         success: false,
         message: '无权修改此决策问题'
@@ -224,7 +245,7 @@ router.put('/:id', identifyUser, async (req, res) => {
   }
 });
 
-// 删除决策问题（新API）
+// 删除决策问题（新API）- 智能删除逻辑
 router.delete('/:id', identifyUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,33 +259,50 @@ router.delete('/:id', identifyUser, async (req, res) => {
       });
     }
 
-    // 检查用户权限
-    if (existingProblem.user_id !== req.user.user_id) {
+    let result;
+    let message;
+
+    // 智能删除逻辑
+    if (!req.user || !req.user.user_id) {
       return res.status(403).json({
         success: false,
-        message: '无权删除此决策问题'
+        message: '用户识别失败，无法执行删除操作'
       });
     }
 
-    // 删除问题（包括相关的准则和方案）
-    const deleted = await DecisionProblem.delete(id);
-
-    if (!deleted) {
-      return res.status(500).json({
-        success: false,
-        message: '删除决策问题失败'
-      });
+    if (existingProblem.user_id === req.user.user_id) {
+      // 用户是创建者 - 删除整个问题
+      const deleted = await DecisionProblem.delete(id);
+      if (!deleted) {
+        return res.status(500).json({
+          success: false,
+          message: '删除决策问题失败'
+        });
+      }
+      result = true;
+      message = '决策问题已成功删除';
+    } else {
+      // 用户是参与者 - 只删除参与关系
+      const removed = await User.removeParticipation(req.user.user_id, id);
+      if (!removed) {
+        return res.status(500).json({
+          success: false,
+          message: '移除参与关系失败'
+        });
+      }
+      result = true;
+      message = '已从问题列表中移除';
     }
 
     res.json({
       success: true,
-      message: '决策问题已成功删除'
+      message: message
     });
   } catch (error) {
     console.error('Error deleting decision problem:', error);
     res.status(500).json({
       success: false,
-      message: '删除决策问题失败',
+      message: '删除操作失败',
       error: error.message
     });
   }

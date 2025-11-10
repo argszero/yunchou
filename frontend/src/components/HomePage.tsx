@@ -17,9 +17,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Tooltip
+  Tooltip,
+  Snackbar
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, Share } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { DecisionProblem } from '../types';
 import { apiClient } from '../utils/api';
@@ -36,6 +37,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [problemToDelete, setProblemToDelete] = useState<DecisionProblem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [problemToShare, setProblemToShare] = useState<DecisionProblem | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   useEffect(() => {
     loadProblems();
@@ -93,6 +98,35 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setProblemToDelete(null);
+  };
+
+  const handleShareClick = (problem: DecisionProblem) => {
+    setProblemToShare(problem);
+    setShareDialogOpen(true);
+  };
+
+  const handleShareClose = () => {
+    setShareDialogOpen(false);
+    setProblemToShare(null);
+  };
+
+  const handleCopyUrl = async () => {
+    if (!problemToShare) return;
+
+    const shareUrl = `${window.location.origin}/problem/${problemToShare.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setSnackbarMessage('链接已复制到剪贴板');
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      setSnackbarMessage('复制失败，请手动复制链接');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -247,6 +281,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
                       <Edit />
                     </IconButton>
                   </Tooltip>
+                  <Tooltip title="分享问题">
+                    <IconButton
+                      onClick={() => handleShareClick(problem)}
+                      size="small"
+                      sx={{
+                        bgcolor: 'info.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'info.dark'
+                        }
+                      }}
+                    >
+                      <Share />
+                    </IconButton>
+                  </Tooltip>
                   <IconButton
                     onClick={() => handleDeleteClick(problem)}
                     size="small"
@@ -311,6 +360,88 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 分享对话框 */}
+      <Dialog
+        open={shareDialogOpen}
+        onClose={handleShareClose}
+        aria-labelledby="share-dialog-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="share-dialog-title">
+          分享决策问题
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {problemToShare?.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              扫描二维码或复制链接分享给其他人
+            </Typography>
+
+            {/* 二维码占位区域 */}
+            <Box
+              sx={{
+                width: 200,
+                height: 200,
+                bgcolor: 'grey.100',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 2,
+                mx: 'auto',
+                mb: 3
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                二维码生成区域
+              </Typography>
+            </Box>
+
+            {/* 分享链接 */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                分享链接：
+              </Typography>
+              <Box
+                sx={{
+                  p: 1,
+                  bgcolor: 'grey.50',
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: 'divider',
+                  wordBreak: 'break-all',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {problemToShare ? `${window.location.origin}/problem/${problemToShare.id}` : ''}
+              </Box>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleShareClose}>
+            关闭
+          </Button>
+          <Button
+            onClick={handleCopyUrl}
+            variant="contained"
+            startIcon={<Share />}
+          >
+            复制链接
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 通知消息 */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
     </Box>
   );
 };

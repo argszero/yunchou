@@ -43,16 +43,60 @@ class User {
     return users[0] || null;
   }
 
-  // 获取用户的所有决策问题
+  // 获取用户的所有决策问题（包括创建的和参与的）
   static async getUserDecisionProblems(userId) {
     const problems = await query(
-      `SELECT id, user_id, title, description, weights, consistency_ratio, is_consistent, created_at, updated_at
-       FROM or_decision_problems
-       WHERE user_id = ?
-       ORDER BY created_at DESC`,
-      [userId]
+      `SELECT
+         p.id,
+         p.user_id,
+         p.title,
+         p.description,
+         p.weights,
+         p.consistency_ratio,
+         p.is_consistent,
+         p.created_at,
+         p.updated_at,
+         CASE
+           WHEN p.user_id = ? THEN 'creator'
+           ELSE 'participant'
+         END as user_role
+       FROM or_decision_problems p
+       WHERE p.user_id = ?
+       OR p.id IN (
+         SELECT problem_id FROM or_user_participations WHERE user_id = ?
+       )
+       ORDER BY p.created_at DESC`,
+      [userId, userId, userId]
     );
     return problems;
+  }
+
+  // 记录用户参与问题
+  static async addParticipation(userId, problemId) {
+    try {
+      await query(
+        'INSERT IGNORE INTO or_user_participations (user_id, problem_id) VALUES (?, ?)',
+        [userId, problemId]
+      );
+      return true;
+    } catch (error) {
+      console.error('Error adding participation:', error);
+      return false;
+    }
+  }
+
+  // 移除用户参与关系
+  static async removeParticipation(userId, problemId) {
+    try {
+      const result = await query(
+        'DELETE FROM or_user_participations WHERE user_id = ? AND problem_id = ?',
+        [userId, problemId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error removing participation:', error);
+      return false;
+    }
   }
 }
 

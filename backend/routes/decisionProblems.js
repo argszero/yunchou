@@ -112,6 +112,21 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // 尝试识别用户并记录参与关系
+    try {
+      const fingerprintData = generateFingerprintData(req);
+      if (validateFingerprintData(fingerprintData)) {
+        const user = await User.findOrCreate(fingerprintData);
+        // 如果用户不是问题的创建者，则记录参与关系
+        if (user.user_id !== problem.user_id) {
+          await User.addParticipation(user.user_id, id);
+        }
+      }
+    } catch (userError) {
+      // 用户识别失败不影响返回问题数据
+      console.warn('User identification failed, but still returning problem data:', userError.message);
+    }
+
     res.json({
       success: true,
       data: problem

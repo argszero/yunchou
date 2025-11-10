@@ -34,10 +34,10 @@ class ApiClient {
   /**
    * 获取请求头
    */
-  private getHeaders(): Record<string, string> {
+  private async getHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...fingerprintManager.getRequestHeaders()
+      ...(await fingerprintManager.getRequestHeaders())
     };
     return headers;
   }
@@ -48,7 +48,7 @@ class ApiClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const config: RequestInit = {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       ...options
     };
 
@@ -153,8 +153,8 @@ class ApiClient {
   /**
    * 检查指纹有效性
    */
-  isFingerprintValid(): boolean {
-    return fingerprintManager.isValid();
+  async isFingerprintValid(): Promise<boolean> {
+    return await fingerprintManager.isValid();
   }
 
   /**

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS or_users (
     language VARCHAR(10), -- 语言
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_fingerprint (fingerprint_hash),
+    UNIQUE KEY unique_fingerprint (fingerprint_hash),
     INDEX idx_created_at (created_at)
 );
 
@@ -85,5 +85,18 @@ CREATE TABLE IF NOT EXISTS or_topsis_results (
     FOREIGN KEY (problem_id) REFERENCES or_decision_problems(id) ON DELETE CASCADE,
     FOREIGN KEY (alternative_id) REFERENCES or_alternatives(id) ON DELETE CASCADE,
     UNIQUE KEY unique_result (problem_id, alternative_id),
+    INDEX idx_problem_id (problem_id)
+);
+
+-- 用户参与问题表（记录用户参与过的问题）
+CREATE TABLE IF NOT EXISTS or_user_participations (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) NOT NULL,
+    problem_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES or_users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (problem_id) REFERENCES or_decision_problems(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_participation (user_id, problem_id),
+    INDEX idx_user_id (user_id),
     INDEX idx_problem_id (problem_id)
 );
