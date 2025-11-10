@@ -185,7 +185,7 @@ function App() {
                 align="center"
                 sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
               >
-                © 2024 运筹决策助手 - 基于运筹学AHP+TOPSIS模型的决策辅助系统
+                © 2025 运筹决策助手 - 基于运筹学AHP+TOPSIS模型的决策辅助系统
               </Typography>
             </Box>
           </Box>

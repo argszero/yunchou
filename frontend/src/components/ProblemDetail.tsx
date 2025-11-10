@@ -5,8 +5,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Tabs,
-  Tab,
   Paper,
   TextField,
   Slider,
@@ -19,7 +17,9 @@ import {
   Card,
   CardContent,
   LinearProgress,
-  Fab
+  Fab,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import {
   ArrowBack,
@@ -226,7 +226,7 @@ export const ProblemDetail: React.FC = () => {
     navigate('/');
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.MouseEvent<HTMLElement>, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -889,28 +889,46 @@ export const ProblemDetail: React.FC = () => {
         maxWidth: '100%',
         overflow: 'hidden'
       }}>
-        <Tabs
+        {/* 移动端友好的导航 - 使用分段控制 */}
+        <ToggleButtonGroup
           value={activeTab}
+          exclusive
           onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
+          aria-label="导航菜单"
           sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
             width: '100%',
-            maxWidth: '100%',
-            '& .MuiTab-root': {
-              minWidth: 'auto',
-              px: 2
+            mb: 2,
+            '& .MuiToggleButton-root': {
+              flex: 1,
+              py: 1.5,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark'
+                }
+              }
             }
           }}
         >
-          <Tab label="评价准则" />
-          <Tab label="备选方案" />
-          <Tab label="权重分配" />
-          <Tab label="方案评分" />
-          <Tab label="结果分析" />
-        </Tabs>
+          <ToggleButton value={0} aria-label="评价准则">
+            准则
+          </ToggleButton>
+          <ToggleButton value={1} aria-label="备选方案">
+            方案
+          </ToggleButton>
+          <ToggleButton value={2} aria-label="权重分配">
+            权重
+          </ToggleButton>
+          <ToggleButton value={3} aria-label="方案评分">
+            评分
+          </ToggleButton>
+          <ToggleButton value={4} aria-label="结果分析">
+            结果
+          </ToggleButton>
+        </ToggleButtonGroup>
 
         {/* 评价准则面板 - 支持编辑 */}
         <TabPanel value={activeTab} index={0}>

@@ -46,7 +46,7 @@ class User {
   // 获取用户的所有决策问题
   static async getUserDecisionProblems(userId) {
     const problems = await query(
-      `SELECT id, title, description, weights, consistency_ratio, is_consistent, created_at, updated_at
+      `SELECT id, user_id, title, description, weights, consistency_ratio, is_consistent, created_at, updated_at
        FROM or_decision_problems
        WHERE user_id = ?
        ORDER BY created_at DESC`,
