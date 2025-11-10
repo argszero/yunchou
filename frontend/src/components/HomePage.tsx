@@ -11,9 +11,14 @@ import {
   Chip,
   Fab,
   CircularProgress,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
-import { Add, Edit, Visibility } from '@mui/icons-material';
+import { Add, Edit, Visibility, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { DecisionProblem } from '../types';
 import { apiClient } from '../utils/api';
@@ -27,6 +32,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
   const [problems, setProblems] = useState<DecisionProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [problemToDelete, setProblemToDelete] = useState<DecisionProblem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadProblems();
@@ -59,6 +67,35 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
 
   const handleEditProblem = (problemId: string) => {
     navigate(`/problem/${problemId}/edit`);
+  };
+
+  const handleDeleteClick = (problem: DecisionProblem) => {
+    setProblemToDelete(problem);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!problemToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await apiClient.delete(`/problems/${problemToDelete.id}`);
+
+      // 从列表中移除已删除的问题
+      setProblems(problems.filter(p => p.id !== problemToDelete.id));
+      setDeleteDialogOpen(false);
+      setProblemToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete problem:', err);
+      setError('删除决策问题失败');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setProblemToDelete(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -224,6 +261,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
                   >
                     <Edit />
                   </IconButton>
+                  <IconButton
+                    onClick={() => handleDeleteClick(problem)}
+                    size="small"
+                    sx={{
+                      bgcolor: 'error.main',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'error.dark'
+                      }
+                    }}
+                  >
+                    <Delete />
+                  </IconButton>
                 </Box>
               </ListItemSecondaryAction>
             </ListItem>
@@ -245,6 +295,36 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
       >
         <Add />
       </Fab>
+
+      {/* 删除确认对话框 */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+      >
+        <DialogTitle id="delete-dialog-title">
+          确认删除
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            您确定要删除决策问题 "{problemToDelete?.title}" 吗？此操作无法撤销，相关的所有准则和方案也将被删除。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+            取消
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={16} /> : null}
+          >
+            {isDeleting ? '删除中...' : '确认删除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

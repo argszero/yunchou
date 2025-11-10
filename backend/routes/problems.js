@@ -51,7 +51,10 @@ router.get('/', identifyUser, async (req, res) => {
       alternatives: problem.alternatives || []
     }));
 
-    res.json(formattedProblems);
+    res.json({
+      success: true,
+      data: formattedProblems
+    });
   } catch (error) {
     console.error('Error fetching user decision problems:', error);
     res.status(500).json({
@@ -215,6 +218,52 @@ router.put('/:id', identifyUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '更新决策问题失败',
+      error: error.message
+    });
+  }
+});
+
+// 删除决策问题（新API）
+router.delete('/:id', identifyUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 检查问题是否存在
+    const existingProblem = await DecisionProblem.findById(id);
+    if (!existingProblem) {
+      return res.status(404).json({
+        success: false,
+        message: '决策问题不存在'
+      });
+    }
+
+    // 检查用户权限
+    if (existingProblem.user_id !== req.user.user_id) {
+      return res.status(403).json({
+        success: false,
+        message: '无权删除此决策问题'
+      });
+    }
+
+    // 删除问题（包括相关的准则和方案）
+    const deleted = await DecisionProblem.delete(id);
+
+    if (!deleted) {
+      return res.status(500).json({
+        success: false,
+        message: '删除决策问题失败'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: '决策问题已成功删除'
+    });
+  } catch (error) {
+    console.error('Error deleting decision problem:', error);
+    res.status(500).json({
+      success: false,
+      message: '删除决策问题失败',
       error: error.message
     });
   }

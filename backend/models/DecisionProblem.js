@@ -118,6 +118,23 @@ class DecisionProblem {
 
     return await this.findById(id);
   }
+
+  // 删除决策问题（包括相关的准则和方案）
+  static async delete(id) {
+    // 先删除相关的准则
+    const deleteCriteriaSql = 'DELETE FROM or_criteria WHERE problem_id = ?';
+    await query(deleteCriteriaSql, [id]);
+
+    // 再删除相关的方案
+    const deleteAlternativesSql = 'DELETE FROM or_alternatives WHERE problem_id = ?';
+    await query(deleteAlternativesSql, [id]);
+
+    // 最后删除决策问题本身
+    const deleteProblemSql = 'DELETE FROM or_decision_problems WHERE id = ?';
+    const result = await query(deleteProblemSql, [id]);
+
+    return result.affectedRows > 0;
+  }
 }
 
 export default DecisionProblem;

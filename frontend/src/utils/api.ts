@@ -95,7 +95,7 @@ class ApiClient {
    * 获取用户的所有决策问题（新API）
    */
   async getProblems(): Promise<DecisionProblem[]> {
-    const response = await this.request<DecisionProblem[]>('/api/problems');
+    const response = await this.request<DecisionProblem[]>('/problems');
     return response.data || [];
   }
 
@@ -127,6 +127,17 @@ class ApiClient {
     const response = await this.request(url, {
       method: 'PUT',
       body: JSON.stringify(data)
+    });
+    // 新API返回数据直接返回，不需要提取data字段
+    return response;
+  }
+
+  /**
+   * 删除决策问题（新API）
+   */
+  async delete(url: string): Promise<any> {
+    const response = await this.request(url, {
+      method: 'DELETE'
     });
     // 新API返回数据直接返回，不需要提取data字段
     return response;
