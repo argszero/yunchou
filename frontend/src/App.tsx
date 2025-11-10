@@ -12,7 +12,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from './components/HomePage';
 import { ProblemCreation } from './components/ProblemCreation';
 import { ProblemDetail } from './components/ProblemDetail';
-import { DecisionFlow } from './components/DecisionFlow';
 
 // 创建主题
 const theme = createTheme({
@@ -162,7 +161,6 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/create" element={<ProblemCreation />} />
                 <Route path="/problem/:id" element={<ProblemDetail />} />
-                <Route path="/legacy" element={<DecisionFlow />} />
               </Routes>
             </Paper>
           </Box>

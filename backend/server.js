@@ -3,7 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { testConnection } from './utils/db.js';
 import initializeDatabase from './database/init.js';
-import decisionProblemsRouter from './routes/decisionProblems.js';
 import problemsRouter from './routes/problems.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +15,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // API路由
-app.use('/api/decision-problems', decisionProblemsRouter);
 app.use('/api/problems', problemsRouter);
 
 // 数据库健康检查接口
