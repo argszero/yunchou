@@ -16,9 +16,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Tooltip
 } from '@mui/material';
-import { Add, Edit, Visibility, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { DecisionProblem } from '../types';
 import { apiClient } from '../utils/api';
@@ -61,12 +62,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
     }
   };
 
-  const handleViewProblem = (problemId: string) => {
-    navigate(`/problem/${problemId}`);
-  };
-
   const handleEditProblem = (problemId: string) => {
-    navigate(`/problem/${problemId}/edit`);
+    navigate(`/problem/${problemId}`);
   };
 
   const handleDeleteClick = (problem: DecisionProblem) => {
@@ -235,32 +232,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
               />
               <ListItemSecondaryAction>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <IconButton
-                    onClick={() => handleViewProblem(problem.id)}
-                    size="small"
-                    sx={{
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'primary.dark'
-                      }
-                    }}
-                  >
-                    <Visibility />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleEditProblem(problem.id)}
-                    size="small"
-                    sx={{
-                      bgcolor: 'secondary.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'secondary.dark'
-                      }
-                    }}
-                  >
-                    <Edit />
-                  </IconButton>
+                  <Tooltip title={problem.isOwner ? "编辑问题（您是创建者）" : "评分方案（您是参与者）"}>
+                    <IconButton
+                      onClick={() => handleEditProblem(problem.id)}
+                      size="small"
+                      sx={{
+                        bgcolor: problem.isOwner ? 'primary.main' : 'secondary.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: problem.isOwner ? 'primary.dark' : 'secondary.dark'
+                        }
+                      }}
+                    >
+                      <Edit />
+                    </IconButton>
+                  </Tooltip>
                   <IconButton
                     onClick={() => handleDeleteClick(problem)}
                     size="small"

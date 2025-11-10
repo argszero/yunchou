@@ -48,7 +48,8 @@ router.get('/', identifyUser, async (req, res) => {
       status: problem.status || 'draft',
       createdAt: problem.created_at,
       criteria: problem.criteria || [],
-      alternatives: problem.alternatives || []
+      alternatives: problem.alternatives || [],
+      isOwner: problem.user_id === req.user.user_id
     }));
 
     res.json({

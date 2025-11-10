@@ -22,6 +22,7 @@ export interface DecisionProblem {
   weights: number[];
   createdAt: Date;
   updatedAt: Date;
+  isOwner?: boolean;
 }
 
 // AHP相关类型
