@@ -11,8 +11,8 @@ export async function generateWithLLM(problemTitle) {
     const prompt = `用户输入了一个决策问题："${problemTitle}"
 
 请为这个决策问题生成：
-1. 5-8个评价准则（每个准则包含名称、简短描述和默认权重百分比）
-2. 3-5个备选方案（每个方案包含名称、简短描述）
+1. 3-5个评价准则（每个准则包含名称、简短描述和默认权重百分比）
+2. 5-8个备选方案（每个方案包含名称、简短描述）
 3. 每个方案针对每个准则的默认评分（0-100分）
 
 要求：
@@ -88,8 +88,8 @@ export async function generateWithLLM(problemTitle) {
     }
 
     // 确保数量在合理范围内
-    const criteria = generatedContent.criteria.slice(0, 8); // 最多8个准则
-    const alternatives = generatedContent.alternatives.slice(0, 5); // 最多5个方案
+    const criteria = generatedContent.criteria.slice(0, 5); // 最多5个准则
+    const alternatives = generatedContent.alternatives.slice(0, 8); // 最多8个方案
 
     return {
       criteria,

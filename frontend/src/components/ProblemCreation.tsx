@@ -140,10 +140,10 @@ export const ProblemCreation: React.FC = () => {
             💡 系统将自动调用AI为您生成：
           </Typography>
           <Typography variant="body2" color="info.contrastText" sx={{ mt: 1 }}>
-            • 5-8个相关评价准则
+            • 3-5个相关评价准则
           </Typography>
           <Typography variant="body2" color="info.contrastText">
-            • 3-5个备选方案
+            • 5-8个备选方案
           </Typography>
           <Typography variant="body2" color="info.contrastText" sx={{ mt: 1, fontSize: '0.75rem' }}>
             创建后您可以随时调整生成的内容
