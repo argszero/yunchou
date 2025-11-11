@@ -172,8 +172,8 @@ export const ProblemDetail: React.FC = () => {
       // 使用后端返回的默认权重，如果没有则使用均等权重
       const initialWeights: Record<string, number> = {};
       problem.criteria.forEach((criterion, index) => {
-        const defaultWeight = problem.weights && problem.weights[index] !== undefined
-          ? problem.weights[index]
+        const defaultWeight = criterion.weight !== null && criterion.weight !== undefined
+          ? criterion.weight
           : Math.floor(100 / problem.criteria.length);
         initialWeights[criterion.id] = defaultWeight;
       });
@@ -238,15 +238,21 @@ export const ProblemDetail: React.FC = () => {
         [criterionId]: value
       };
 
-      // 更新问题对象的weights数组
+      // 更新问题对象的criteria.weight字段
       if (problem) {
-        const updatedWeights = problem.criteria.map((criterion) => {
-          return newWeights[criterion.id] || 0;
+        const updatedCriteria = problem.criteria.map((criterion) => {
+          if (criterion.id === criterionId) {
+            return {
+              ...criterion,
+              weight: value
+            };
+          }
+          return criterion;
         });
 
         const updatedProblem = {
           ...problem,
-          weights: updatedWeights
+          criteria: updatedCriteria
         };
 
         setProblem(updatedProblem);
@@ -283,15 +289,18 @@ export const ProblemDetail: React.FC = () => {
 
     setWeights(normalizedWeights);
 
-    // 更新问题对象的weights数组并保存
+    // 更新问题对象的criteria.weight字段并保存
     if (problem) {
-      const updatedWeights = problem.criteria.map((criterion) => {
-        return normalizedWeights[criterion.id] || 0;
+      const updatedCriteria = problem.criteria.map((criterion) => {
+        return {
+          ...criterion,
+          weight: normalizedWeights[criterion.id] || 0
+        };
       });
 
       const updatedProblem = {
         ...problem,
-        weights: updatedWeights
+        criteria: updatedCriteria
       };
 
       setProblem(updatedProblem);

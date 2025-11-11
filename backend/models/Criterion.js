@@ -8,6 +8,7 @@ class Criterion {
       name,
       description = null,
       sortOrder = 0,
+      weight = null,
       isLLMGenerated = false
     } = criterionData;
 
@@ -16,11 +17,11 @@ class Criterion {
     const criterionId = uuidv4();
 
     const sql = `
-      INSERT INTO or_criteria (id, problem_id, name, description, sort_order, is_llm_generated)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO or_criteria (id, problem_id, name, description, sort_order, weight, is_llm_generated)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    await query(sql, [criterionId, problemId, name, description, sortOrder, isLLMGenerated]);
+    await query(sql, [criterionId, problemId, name, description, sortOrder, weight, isLLMGenerated]);
     return criterionId;
   }
 }

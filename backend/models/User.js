@@ -51,7 +51,6 @@ class User {
          p.user_id,
          p.title,
          p.description,
-         p.weights,
          p.consistency_ratio,
          p.is_consistent,
          p.created_at,

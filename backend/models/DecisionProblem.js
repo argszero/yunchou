@@ -7,7 +7,6 @@ class DecisionProblem {
       userId,
       title,
       description = null,
-      weights = null,
       consistencyRatio = null,
       isConsistent = false
     } = problemData;
@@ -18,8 +17,8 @@ class DecisionProblem {
 
     const sql = `
       INSERT INTO or_decision_problems
-      (id, user_id, title, description, weights, consistency_ratio, is_consistent)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (id, user_id, title, description, consistency_ratio, is_consistent)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
     await query(sql, [
@@ -27,7 +26,6 @@ class DecisionProblem {
       userId,
       title,
       description,
-      weights ? JSON.stringify(weights) : null,
       consistencyRatio,
       isConsistent
     ]);
@@ -55,9 +53,15 @@ class DecisionProblem {
     const alternativesSql = 'SELECT * FROM or_alternatives WHERE problem_id = ? ORDER BY ranking';
     const alternatives = await query(alternativesSql, [id]);
 
+    // 转换权重数据类型（MySQL DECIMAL返回字符串）
+    const formattedCriteria = criteria.map(criterion => ({
+      ...criterion,
+      weight: criterion.weight !== null ? parseFloat(criterion.weight) : null
+    }));
+
     return {
       ...problem,
-      criteria,
+      criteria: formattedCriteria,
       alternatives
     };
   }
@@ -67,7 +71,6 @@ class DecisionProblem {
     const {
       title,
       description,
-      weights,
       consistencyRatio,
       isConsistent
     } = updateData;
@@ -85,10 +88,6 @@ class DecisionProblem {
       values.push(description);
     }
 
-    if (weights !== undefined) {
-      updates.push('weights = ?');
-      values.push(weights ? JSON.stringify(weights) : null);
-    }
 
     if (consistencyRatio !== undefined) {
       updates.push('consistency_ratio = ?');

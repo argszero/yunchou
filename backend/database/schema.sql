@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS or_decision_problems (
     user_id VARCHAR(36) NOT NULL, -- 关联用户ID
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    weights JSON, -- 存储权重数组 [0.3, 0.4, 0.3]
     consistency_ratio DECIMAL(5,4), -- AHP一致性比率
     is_consistent BOOLEAN DEFAULT FALSE, -- 是否通过一致性检验
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -37,6 +36,7 @@ CREATE TABLE IF NOT EXISTS or_criteria (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     sort_order INT DEFAULT 0, -- 排序字段
+    weight DECIMAL(5,2) DEFAULT NULL, -- 权重（百分比）
     is_llm_generated BOOLEAN DEFAULT FALSE, -- 是否为LLM自动生成
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (problem_id) REFERENCES or_decision_problems(id) ON DELETE CASCADE,

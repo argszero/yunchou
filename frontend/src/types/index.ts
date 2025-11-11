@@ -4,6 +4,7 @@ export interface Criterion {
   id: string;
   name: string;
   description?: string;
+  weight?: number;
 }
 
 export interface Alternative {
@@ -19,7 +20,6 @@ export interface DecisionProblem {
   description?: string;
   criteria: Criterion[];
   alternatives: Alternative[];
-  weights: number[];
   createdAt: Date;
   updatedAt: Date;
   isOwner?: boolean;

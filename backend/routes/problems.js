@@ -96,24 +96,21 @@ router.post('/', identifyUser, async (req, res) => {
     // 调用LLM自动生成准则和方案
     const generatedContent = await generateWithLLM(title.trim());
 
-    // 提取默认权重
-    const defaultWeights = generatedContent.criteria.map(criterion => criterion.defaultWeight || 0);
-
-    // 创建决策问题（包含默认权重）
+    // 创建决策问题（不再包含权重字段）
     const problemId = await DecisionProblem.create({
       userId: req.user.user_id,
       title: title.trim(),
-      description: '',
-      weights: defaultWeights
+      description: ''
     });
 
-    // 创建生成的准则
+    // 创建生成的准则（包含权重）
     for (const [index, criterion] of generatedContent.criteria.entries()) {
       await Criterion.create({
         problemId,
         name: criterion.name,
         description: criterion.description,
         sortOrder: index,
+        weight: criterion.defaultWeight || null,
         isLLMGenerated: true
       });
     }
