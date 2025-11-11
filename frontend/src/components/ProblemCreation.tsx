@@ -135,17 +135,17 @@ export const ProblemCreation: React.FC = () => {
         </Button>
 
         {/* 提示信息 */}
-        <Box sx={{ mt: 3, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-          <Typography variant="body2" color="info.contrastText">
+        <Box sx={{ mt: 3, p: 2, bgcolor: 'secondary.light', borderRadius: 1 }}>
+          <Typography variant="body2" color="secondary.contrastText">
             💡 系统将自动调用AI为您生成：
           </Typography>
-          <Typography variant="body2" color="info.contrastText" sx={{ mt: 1 }}>
+          <Typography variant="body2" color="secondary.contrastText" sx={{ mt: 1 }}>
             • 3-5个相关评价准则
           </Typography>
-          <Typography variant="body2" color="info.contrastText">
+          <Typography variant="body2" color="secondary.contrastText">
             • 5-8个备选方案
           </Typography>
-          <Typography variant="body2" color="info.contrastText" sx={{ mt: 1, fontSize: '0.75rem' }}>
+          <Typography variant="body2" color="secondary.contrastText" sx={{ mt: 1, fontSize: '0.75rem' }}>
             创建后您可以随时调整生成的内容
           </Typography>
         </Box>

@@ -272,10 +272,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
                       onClick={() => handleEditProblem(problem.id)}
                       size="small"
                       sx={{
-                        bgcolor: problem.isOwner ? 'primary.main' : 'secondary.main',
+                        bgcolor: problem.isOwner ? '#81C784' : '#2196F3',
                         color: 'white',
                         '&:hover': {
-                          bgcolor: problem.isOwner ? 'primary.dark' : 'secondary.dark'
+                          bgcolor: problem.isOwner ? '#66BB6A' : '#1976D2'
                         }
                       }}
                     >
@@ -287,10 +287,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
                       onClick={() => handleShareClick(problem)}
                       size="small"
                       sx={{
-                        bgcolor: 'info.main',
+                        bgcolor: '#FF8A9D',
                         color: 'white',
                         '&:hover': {
-                          bgcolor: 'info.dark'
+                          bgcolor: '#FF6B8B'
                         }
                       }}
                     >
@@ -301,10 +301,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
                     onClick={() => handleDeleteClick(problem)}
                     size="small"
                     sx={{
-                      bgcolor: 'error.main',
+                      bgcolor: '#F44336',
                       color: 'white',
                       '&:hover': {
-                        bgcolor: 'error.dark'
+                        bgcolor: '#D32F2F'
                       }
                     }}
                   >

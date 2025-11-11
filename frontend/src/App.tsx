@@ -13,17 +13,22 @@ import { HomePage } from './components/HomePage';
 import { ProblemCreation } from './components/ProblemCreation';
 import { ProblemDetail } from './components/ProblemDetail';
 
-// 创建主题
+// 创建花叶色系主题 - 绿色为主，粉色点缀
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#2196F3', // 科技蓝
+      main: '#81C784', // 柔和的青绿色 - 主色调（叶子）
+      light: '#A5D6A7',
+      dark: '#66BB6A',
     },
     secondary: {
-      main: '#4CAF50', // 成功绿
+      main: '#FF8A9D', // 柔和的樱花粉 - 点缀色（花朵）
+      light: '#FFB6C1',
+      dark: '#FF6B8B',
     },
     background: {
-      default: '#f5f5f5',
+      default: '#F9FBE7', // 极浅黄绿色背景
+      paper: '#FFFFFF',
     },
   },
   typography: {
@@ -109,7 +114,7 @@ function App() {
                 sx={{
                   flexGrow: 1,
                   fontWeight: 700,
-                  background: 'linear-gradient(45deg, #2196F3, #21CBF3)',
+                  background: 'linear-gradient(45deg, #81C784 70%, #FF8A9D 30%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   color: 'transparent',

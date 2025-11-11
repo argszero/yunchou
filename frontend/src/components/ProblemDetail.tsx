@@ -40,7 +40,11 @@ import {
   PolarRadiusAxis,
   Radar,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip
 } from 'recharts';
 
 // CSS动画定义
@@ -132,6 +136,11 @@ export const ProblemDetail: React.FC = () => {
   const [ahpFullScreenMode, setAhpFullScreenMode] = useState(false);
   const [currentAhpComparison, setCurrentAhpComparison] = useState<{ criterion1: string; criterion2: string } | null>(null);
   const [autoNavigateTimer, setAutoNavigateTimer] = useState<number | null>(null);
+
+  // 结果页面状态
+  const [showAllRankings, setShowAllRankings] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [selectedPieSector, setSelectedPieSector] = useState<string | null>(null);
 
   // 编辑相关状态
   const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
@@ -486,17 +495,17 @@ export const ProblemDetail: React.FC = () => {
 
     if (sliderValue === 0) return 1; // 中间位置，同等重要
 
-    if (sliderValue > 0) {
-      // 向右滑动，上方准则更重要
-      const normalizedValue = sliderValue / 100;
+    if (sliderValue < 0) {
+      // 向左滑动，上方准则更重要
+      const normalizedValue = Math.abs(sliderValue) / 100;
       if (normalizedValue <= 0.2) return 2;      // 稍微重要
       if (normalizedValue <= 0.4) return 3;      // 明显重要
       if (normalizedValue <= 0.6) return 5;      // 强烈重要
       if (normalizedValue <= 0.8) return 7;      // 非常重要
       return 9;                                  // 极端重要
     } else {
-      // 向左滑动，下方准则更重要
-      const normalizedValue = Math.abs(sliderValue) / 100;
+      // 向右滑动，下方准则更重要
+      const normalizedValue = sliderValue / 100;
       if (normalizedValue <= 0.2) return 1/2;    // 稍微重要
       if (normalizedValue <= 0.4) return 1/3;    // 明显重要
       if (normalizedValue <= 0.6) return 1/5;    // 强烈重要
@@ -512,23 +521,23 @@ export const ProblemDetail: React.FC = () => {
     if (ahpValue > 1) {
       // 上方准则更重要
       switch (ahpValue) {
-        case 2: return 20;   // 稍微重要
-        case 3: return 40;   // 明显重要
-        case 5: return 60;   // 强烈重要
-        case 7: return 80;   // 非常重要
-        case 9: return 100;  // 极端重要
-        default: return Math.min(100, (ahpValue - 1) * 12.5);
-      }
-    } else {
-      // 下方准则更重要
-      const reciprocal = 1 / ahpValue;
-      switch (reciprocal) {
         case 2: return -20;   // 稍微重要
         case 3: return -40;   // 明显重要
         case 5: return -60;   // 强烈重要
         case 7: return -80;   // 非常重要
         case 9: return -100;  // 极端重要
-        default: return Math.max(-100, -(reciprocal - 1) * 12.5);
+        default: return Math.max(-100, -(ahpValue - 1) * 12.5);
+      }
+    } else {
+      // 下方准则更重要
+      const reciprocal = 1 / ahpValue;
+      switch (reciprocal) {
+        case 2: return 20;   // 稍微重要
+        case 3: return 40;   // 明显重要
+        case 5: return 60;   // 强烈重要
+        case 7: return 80;   // 非常重要
+        case 9: return 100;  // 极端重要
+        default: return Math.min(100, (reciprocal - 1) * 12.5);
       }
     }
   };
@@ -704,7 +713,8 @@ export const ProblemDetail: React.FC = () => {
       problem.criteria.forEach(criterion => {
         const weight = weights[criterion.id] || 0;
         const score = scores[criterion.id]?.[alternative.id] || 0;
-        totalScore += weight * score;
+        // 权重是百分比，分数是0-100，需要归一化到0-100分
+        totalScore += (weight / 100) * score;
       });
 
       return {
@@ -726,13 +736,27 @@ export const ProblemDetail: React.FC = () => {
         criterion: criterion.name
       };
 
-      topAlternatives.forEach((result, index) => {
+      topAlternatives.forEach((result) => {
         const score = scores[criterion.id]?.[result.alternative.id] || 0;
-        dataPoint[`方案${index + 1}`] = score;
+        dataPoint[result.alternative.name] = score;
         dataPoint[`fullMark`] = 100; // 用于设置雷达图的最大值
       });
 
       return dataPoint;
+    });
+  };
+
+  // 生成单个方案的雷达图数据
+  const generateSingleAlternativeRadarData = (alternativeId: string) => {
+    if (!problem) return [];
+
+    return problem.criteria.map(criterion => {
+      const score = scores[criterion.id]?.[alternativeId] || 0;
+      return {
+        criterion: criterion.name,
+        score: score,
+        fullMark: 100
+      };
     });
   };
 
@@ -1495,8 +1519,8 @@ export const ProblemDetail: React.FC = () => {
                   </Fab>
 
                   {/* AHP说明 */}
-                  <Paper elevation={0} sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-                    <Typography variant="body2" color="info.contrastText">
+                  <Paper elevation={0} sx={{ p: 2, bgcolor: 'secondary.light', borderRadius: 1 }}>
+                    <Typography variant="body2" color="secondary.contrastText">
                       <strong>AHP层次分析法说明：</strong> 使用1-9标度法进行两两比较，回答类似问题：
                       "{problem.criteria[0]?.name}和{problem.criteria[1]?.name}相比，哪个对我们成功更重要？重要多少？"
                     </Typography>
@@ -1505,9 +1529,9 @@ export const ProblemDetail: React.FC = () => {
               )}
 
               {/* 权重状态显示 */}
-              <Box sx={{ mt: 3, p: 2, bgcolor: getTotalWeight() === 100 ? 'success.light' : 'warning.light', borderRadius: 1 }}>
+              <Box sx={{ mt: 3, p: 2, bgcolor: getTotalWeight() === 100 ? '#E8F5E9' : '#FFF3E0', borderRadius: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-                  <Typography variant="body2" color={getTotalWeight() === 100 ? 'success.contrastText' : 'warning.contrastText'}>
+                  <Typography variant="body2" color={getTotalWeight() === 100 ? '#2E7D32' : '#E65100'}>
                     总权重: {getTotalWeight()}%
                     {getTotalWeight() === 100 ? ' ✓ 权重分配完成' : ' ⚠ 请调整权重使总和为100%'}
                   </Typography>
@@ -1518,7 +1542,7 @@ export const ProblemDetail: React.FC = () => {
                       onClick={normalizeWeights}
                       sx={{
                         bgcolor: 'white',
-                        color: 'warning.main',
+                        color: '#E65100',
                         '&:hover': {
                           bgcolor: 'grey.100'
                         }
@@ -1566,11 +1590,12 @@ export const ProblemDetail: React.FC = () => {
                       sx={{
                         p: 3,
                         borderRadius: 2,
+                        background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
                         cursor: 'pointer',
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: '#81C784',
                         '&:hover': {
-                          bgcolor: 'action.hover',
+                          bgcolor: '#C8E6C9',
                           transform: 'translateY(-2px)',
                           transition: 'all 0.2s ease'
                         }
@@ -1588,7 +1613,7 @@ export const ProblemDetail: React.FC = () => {
                             <Box
                               sx={{
                                 height: 8,
-                                bgcolor: progress === 100 ? 'success.main' : 'primary.main',
+                                bgcolor: progress === 100 ? '#66BB6A' : '#81C784',
                                 width: `${progress}%`,
                                 transition: 'width 0.3s ease'
                               }}
@@ -1623,7 +1648,7 @@ export const ProblemDetail: React.FC = () => {
                 {problem && problem.alternatives[currentAlternativeIndex] && (
                   <>
                     {/* 顶部工具栏 */}
-                    <AppBar position="sticky" elevation={1}>
+                    <AppBar position="sticky" elevation={1} sx={{ background: 'linear-gradient(45deg, #81C784 70%, #FF8A9D 30%)' }}>
                       <Toolbar>
                         <IconButton
                           edge="start"
@@ -1673,7 +1698,7 @@ export const ProblemDetail: React.FC = () => {
                               <Typography variant="body2" color="text.secondary">
                                 完成进度
                               </Typography>
-                              <Typography variant="body2" color="primary.main" fontWeight={600}>
+                              <Typography variant="body2" color="#81C784" fontWeight={600}>
                                 {getCurrentAlternativeProgress()}%
                               </Typography>
                             </Box>
@@ -1681,7 +1706,7 @@ export const ProblemDetail: React.FC = () => {
                               <Box
                                 sx={{
                                   height: 12,
-                                  bgcolor: getCurrentAlternativeProgress() === 100 ? 'success.main' : 'primary.main',
+                                  bgcolor: getCurrentAlternativeProgress() === 100 ? '#66BB6A' : '#81C784',
                                   width: `${getCurrentAlternativeProgress()}%`,
                                   transition: 'width 0.3s ease'
                                 }}
@@ -1703,8 +1728,9 @@ export const ProblemDetail: React.FC = () => {
                                 sx={{
                                   p: 3,
                                   borderRadius: 2,
+                                  background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
                                   border: 1,
-                                  borderColor: 'divider'
+                                  borderColor: '#81C784'
                                 }}
                               >
                                 {/* 准则信息 */}
@@ -1769,6 +1795,7 @@ export const ProblemDetail: React.FC = () => {
                             onClick={goToPrevAlternative}
                             disabled={currentAlternativeIndex === 0}
                             size="large"
+                            sx={{ borderColor: '#81C784', color: '#81C784' }}
                           >
                             上一个方案
                           </Button>
@@ -1778,6 +1805,7 @@ export const ProblemDetail: React.FC = () => {
                             onClick={goToNextAlternative}
                             disabled={currentAlternativeIndex === problem.alternatives.length - 1}
                             size="large"
+                            sx={{ bgcolor: '#81C784', '&:hover': { bgcolor: '#66BB6A' } }}
                           >
                             下一个方案
                           </Button>
@@ -1795,159 +1823,22 @@ export const ProblemDetail: React.FC = () => {
           )}
         </TabPanel>
 
-        {/* 结果分析面板 - 惊艳版 */}
+        {/* 结果分析面板 - 优化版 */}
         <TabPanel value={activeTab} index={4}>
           {getTotalWeight() === 100 ? (
             <Box>
               {calculateWeightedScores().length > 0 ? (
                 <Box>
-                  {/* Hero推荐区域 */}
-                  <Box
-                    sx={{
-                      position: 'relative',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: 3,
-                      p: 4,
-                      mb: 4,
-                      color: 'white',
-                      overflow: 'hidden',
-                      animation: 'fadeInUp 0.8s ease-out',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: -50,
-                        right: -50,
-                        width: 200,
-                        height: 200,
-                        background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
-                        borderRadius: '50%',
-                        animation: 'pulse 3s ease-in-out infinite'
-                      },
-                      '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        bottom: -30,
-                        left: -30,
-                        width: 150,
-                        height: 150,
-                        background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%)',
-                        borderRadius: '50%'
-                      }
-                    }}
-                  >
-                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                      🏆 推荐方案
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, fontSize: { xs: '2rem', md: '3rem' } }}>
-                      {calculateWeightedScores()[0]?.alternative.name}
-                    </Typography>
-                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 3 }}>
-                      综合得分：{calculateWeightedScores()[0]?.totalScore.toFixed(2)} 分
-                    </Typography>
-
-                    {/* 优势分析 */}
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                      {problem.criteria.slice(0, 3).map((criterion) => {
-                        const score = scores[criterion.id]?.[calculateWeightedScores()[0]?.alternative.id] || 0;
-                        const weight = weights[criterion.id] || 0;
-                        const contribution = (score * weight / 100).toFixed(1);
-                        return (
-                          <Box
-                            key={criterion.id}
-                            sx={{
-                              background: 'rgba(255,255,255,0.2)',
-                              borderRadius: 2,
-                              p: 2,
-                              backdropFilter: 'blur(10px)',
-                              border: '1px solid rgba(255,255,255,0.3)'
-                            }}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {criterion.name}
-                            </Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                              +{contribution}分
-                            </Typography>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </Box>
-
-                  {/* 雷达图 - 多维度对比 */}
-                  {problem.criteria.length >= 3 && (
-                    <Card
-                      sx={{
-                        p: 3,
-                        mb: 4,
-                        borderRadius: 3,
-                        animation: 'fadeInUp 0.8s ease-out 0.2s both',
-                        background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-                        border: '1px solid #e9ecef'
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center', color: '#2c3e50' }}>
-                        🎯 多维度对比雷达图
-                      </Typography>
-                      <Box sx={{ height: 400 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RadarChart data={generateRadarChartData()}>
-                            <PolarGrid stroke="#e0e0e0" strokeDasharray="3 3" />
-                            <PolarAngleAxis
-                              dataKey="criterion"
-                              tick={{ fontSize: 12, fontWeight: 600, fill: '#2c3e50' }}
-                            />
-                            <PolarRadiusAxis
-                              angle={90}
-                              domain={[0, 100]}
-                              tick={{ fontSize: 10, fill: '#6c757d' }}
-                            />
-                            <Radar
-                              name="🥇 第一名"
-                              dataKey="方案1"
-                              stroke="#ff6b6b"
-                              fill="#ff6b6b"
-                              fillOpacity={0.7}
-                              strokeWidth={2}
-                            />
-                            <Radar
-                              name="🥈 第二名"
-                              dataKey="方案2"
-                              stroke="#4ecdc4"
-                              fill="#4ecdc4"
-                              fillOpacity={0.7}
-                              strokeWidth={2}
-                            />
-                            <Radar
-                              name="🥉 第三名"
-                              dataKey="方案3"
-                              stroke="#45b7d1"
-                              fill="#45b7d1"
-                              fillOpacity={0.7}
-                              strokeWidth={2}
-                            />
-                            <Legend
-                              wrapperStyle={{
-                                paddingTop: 20,
-                                fontSize: '14px',
-                                fontWeight: 600
-                              }}
-                            />
-                          </RadarChart>
-                        </ResponsiveContainer>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-                        展示前3名方案在各评价准则下的表现对比
-                      </Typography>
-                    </Card>
-                  )}
-
-                  {/* 动态排名卡片 */}
+                  {/* 方案排名 - 移到最上面 */}
                   <Box sx={{ mb: 4 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, textAlign: 'center', color: '#2d5016' }}>
                       📊 方案排名
                     </Typography>
-                    {calculateWeightedScores().map((result, index) => (
+
+                    {/* 显示前5名或全部排名 */}
+                    {calculateWeightedScores()
+                      .slice(0, showAllRankings ? calculateWeightedScores().length : 5)
+                      .map((result, index) => (
                       <Card
                         key={result.alternative.id}
                         sx={{
@@ -1955,20 +1846,22 @@ export const ProblemDetail: React.FC = () => {
                           mb: 2,
                           borderRadius: 3,
                           background: index === 0
-                            ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
+                            ? 'linear-gradient(135deg, #FFE8E8 0%, #FFC8C8 100%)'
                             : index === 1
-                            ? 'linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%)'
+                            ? 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)'
                             : index === 2
-                            ? 'linear-gradient(135deg, #cd7f32 0%, #e9a66c 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-                          border: index === 0 ? '2px solid #ffd700' : '1px solid #e0e0e0',
+                            ? 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)'
+                            : 'linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%)',
+                          border: index === 0 ? '2px solid #FF8A9D' : index === 1 ? '1px solid #81C784' : index === 2 ? '1px solid #2196F3' : '1px solid #E9ECEF',
                           transform: index === 0 ? 'scale(1.02)' : 'scale(1)',
                           transition: 'all 0.3s ease',
+                          cursor: 'pointer',
                           '&:hover': {
                             transform: 'translateY(-4px)',
                             boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
                           }
                         }}
+                        onClick={() => setExpandedCard(expandedCard === result.alternative.id ? null : result.alternative.id)}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                           {/* 排名徽章 */}
@@ -1989,7 +1882,7 @@ export const ProblemDetail: React.FC = () => {
                               justifyContent: 'center',
                               color: 'white',
                               fontWeight: 900,
-                              fontSize: '1.5rem',
+                              fontSize: { xs: '1.25rem', sm: '1.5rem' },
                               boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                             }}
                           >
@@ -1998,13 +1891,14 @@ export const ProblemDetail: React.FC = () => {
 
                           {/* 方案信息 */}
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, fontSize: { xs: '1rem', sm: '1.125rem' } }}>
                               {result.alternative.name}
                             </Typography>
-                            <Typography variant="h4" sx={{
-                              fontWeight: 800,
+                            <Typography variant="h5" sx={{
+                              fontWeight: 700,
                               color: index === 0 ? '#d4af37' : 'primary.main',
-                              textShadow: index === 0 ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                              textShadow: index === 0 ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                              fontSize: { xs: '1.5rem', sm: '1.75rem' }
                             }}>
                               {result.totalScore.toFixed(2)} 分
                             </Typography>
@@ -2045,99 +1939,255 @@ export const ProblemDetail: React.FC = () => {
                             )}
                           </Box>
                         </Box>
+
+                        {/* 展开内容 - 得分详情和雷达图 */}
+                        {expandedCard === result.alternative.id && (
+                          <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                            {/* 得分详情 */}
+                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                              📊 得分详情
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+                              {problem.criteria.map(criterion => {
+                                const score = scores[criterion.id]?.[result.alternative.id] || 0;
+                                const weight = weights[criterion.id] || 0;
+                                const contribution = (score * weight / 100).toFixed(2);
+                                return (
+                                  <Paper
+                                    key={criterion.id}
+                                    elevation={1}
+                                    sx={{
+                                      p: 2,
+                                      borderRadius: 2,
+                                      background: 'rgba(255,255,255,0.8)'
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <Box>
+                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                          {criterion.name}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                          权重: {weight}%
+                                        </Typography>
+                                      </Box>
+                                      <Box sx={{ textAlign: 'right' }}>
+                                        <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700 }}>
+                                          {score} 分
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          贡献: {contribution}分
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  </Paper>
+                                );
+                              })}
+                            </Box>
+
+                            {/* 雷达图 */}
+                            {problem.criteria.length >= 3 && (
+                              <Box>
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                  🎯 雷达图分析
+                                </Typography>
+                                <Box sx={{ height: 300 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart data={generateSingleAlternativeRadarData(result.alternative.id)}>
+                                      <PolarGrid stroke="#e0e0e0" strokeDasharray="3 3" />
+                                      <PolarAngleAxis
+                                        dataKey="criterion"
+                                        tick={{ fontSize: 12, fontWeight: 600, fill: '#2c3e50' }}
+                                      />
+                                      <PolarRadiusAxis
+                                        angle={90}
+                                        domain={[0, 100]}
+                                        tick={{ fontSize: 10, fill: '#6c757d' }}
+                                      />
+                                      <Radar
+                                        name={result.alternative.name}
+                                        dataKey="score"
+                                        stroke="#81C784"
+                                        fill="#81C784"
+                                        fillOpacity={0.7}
+                                        strokeWidth={2}
+                                      />
+                                      <Legend />
+                                    </RadarChart>
+                                  </ResponsiveContainer>
+                                </Box>
+                              </Box>
+                            )}
+                          </Box>
+                        )}
                       </Card>
                     ))}
+
+                    {/* 展开/收起按钮 */}
+                    {calculateWeightedScores().length > 5 && (
+                      <Box sx={{ textAlign: 'center', mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          onClick={() => setShowAllRankings(!showAllRankings)}
+                          sx={{
+                            borderRadius: 2,
+                            px: 4,
+                            py: 1
+                          }}
+                        >
+                          {showAllRankings ? '收起排名' : `查看全部 ${calculateWeightedScores().length} 个方案`}
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
 
-                  {/* 权重分布热力图 */}
-                  <Card sx={{ p: 3, mb: 4, borderRadius: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>
-                      🔥 权重分布热力图
+
+                  {/* 雷达图 - 多维度对比 */}
+                  {problem.criteria.length >= 3 && (
+                    <Card
+                      sx={{
+                        p: 3,
+                        mb: 4,
+                        borderRadius: 3,
+                        animation: 'fadeInUp 0.8s ease-out 0.2s both',
+                        background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
+                        border: '1px solid #81C784',
+                        boxShadow: '0 4px 12px rgba(129, 199, 132, 0.3)'
+                      }}
+                    >
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center', color: '#2C3E50' }}>
+                        🎯 多维度对比雷达图
+                      </Typography>
+                      <Box sx={{ height: 400 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart data={generateRadarChartData()}>
+                            <PolarGrid stroke="#E0E0E0" strokeDasharray="3 3" />
+                            <PolarAngleAxis
+                              dataKey="criterion"
+                              tick={{ fontSize: 12, fontWeight: 600, fill: '#2C3E50' }}
+                            />
+                            <PolarRadiusAxis
+                              angle={90}
+                              domain={[0, 100]}
+                              tick={{ fontSize: 10, fill: '#2C3E50' }}
+                            />
+                            {calculateWeightedScores().slice(0, 3).map((result, index) => {
+                              const colors = ['#FF8A9D', '#4CAF50', '#2196F3'];
+                              const medals = ['🥇', '🥈', '🥉'];
+                              return (
+                                <Radar
+                                  key={result.alternative.id}
+                                  name={`${medals[index]} ${result.alternative.name}`}
+                                  dataKey={result.alternative.name}
+                                  stroke={colors[index]}
+                                  fill={colors[index]}
+                                  fillOpacity={0.7}
+                                  strokeWidth={2}
+                                />
+                              );
+                            })}
+                            <Legend
+                              wrapperStyle={{
+                                paddingTop: 20,
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: '#2C3E50'
+                              }}
+                            />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </Box>
+                      <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: '#2C3E50' }}>
+                        展示前3名方案在各评价准则下的表现对比
+                      </Typography>
+                    </Card>
+                  )}
+
+
+                  {/* 权重分布饼图 */}
+                  <Card sx={{
+                    p: 3,
+                    mb: 4,
+                    borderRadius: 3,
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
+                    border: '1px solid #81C784',
+                    boxShadow: '0 4px 12px rgba(129, 199, 132, 0.3)'
+                  }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center', color: '#2C3E50' }}>
+                      🥧 权重分布饼图
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-                      {problem.criteria.map((criterion) => {
-                        const weight = weights[criterion.id] || 0;
-                        const intensity = Math.min(100, weight * 2); // 增强视觉效果
-                        return (
-                          <Box
-                            key={criterion.id}
-                            sx={{
-                              flex: '1 1 calc(25% - 16px)',
-                              minWidth: 120,
-                              textAlign: 'center',
-                              p: 2,
-                              borderRadius: 2,
-                              background: `linear-gradient(135deg,
-                                hsl(210, 100%, ${70 - intensity/3}%) 0%,
-                                hsl(210, 100%, ${50 - intensity/4}%) 100%)`,
-                              color: 'white',
-                              fontWeight: 600,
-                              boxShadow: `0 4px 15px hsla(210, 100%, ${intensity/4}%, 0.3)`,
-                              transition: 'all 0.3s ease',
-                              '&:hover': {
-                                transform: 'scale(1.05)',
-                                boxShadow: `0 6px 20px hsla(210, 100%, ${intensity/4}%, 0.4)`
-                              }
-                            }}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
-                              {criterion.name}
-                            </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                              {weight}%
-                            </Typography>
-                          </Box>
-                        );
-                      })}
+
+
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: 3, width: '100%' }}>
+                      {/* 饼图 */}
+                      <Box sx={{
+                        flex: 1,
+                        minHeight: 300,
+                        width: '100%',
+                        minWidth: 300
+                      }}>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={problem.criteria.map((criterion) => ({
+                                name: criterion.name,
+                                value: weights[criterion.id] || 0
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              dataKey="value"
+                              fill="#8884d8"
+                              onClick={(data) => {
+                                if (data && data.name) {
+                                  setSelectedPieSector(selectedPieSector === data.name ? null : data.name);
+                                }
+                              }}
+                            >
+                              {problem.criteria.map((criterion, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={[
+                                    '#FF8A9D', '#4CAF50', '#2196F3', '#FF9800',
+                                    '#9C27B0', '#00BCD4', '#8BC34A', '#E91E63'
+                                  ][index % 8]}
+                                  style={{
+                                    cursor: 'pointer',
+                                    opacity: selectedPieSector === null || selectedPieSector === criterion.name ? 1 : 0.5,
+                                    transition: 'all 0.3s ease',
+                                    transform: selectedPieSector === criterion.name ? 'scale(1.05)' : 'scale(1)',
+                                    filter: selectedPieSector === criterion.name ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' : 'none'
+                                  }}
+                                />
+                              ))}
+                            </Pie>
+                            <Legend
+                              layout="vertical"
+                              verticalAlign="middle"
+                              align="right"
+                              wrapperStyle={{
+                                paddingLeft: '20px',
+                                fontSize: '14px',
+                                color: '#2C3E50'
+                              }}
+                              formatter={(value) => (
+                                <span style={{ fontSize: '12px', color: '#2C3E50' }}>
+                                  {value}
+                                </span>
+                              )}
+                            />
+                            <Tooltip
+                              formatter={(value, name) => [`${value}%`, `${name} 权重`]}
+                              labelFormatter={() => ''}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </Box>
+
                     </Box>
                   </Card>
 
-                  {/* 得分分布气泡图 */}
-                  <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>
-                      💫 得分分布气泡图
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
-                      {calculateWeightedScores().map((result, index) => {
-                        const size = Math.max(80, 120 - index * 15); // 根据排名调整大小
-                        return (
-                          <Box
-                            key={result.alternative.id}
-                            sx={{
-                              position: 'relative',
-                              width: size,
-                              height: size,
-                              borderRadius: '50%',
-                              background: `radial-gradient(circle at 30% 30%,
-                                ${index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#6c757d'} 0%,
-                                ${index === 0 ? '#ffa500' : index === 1 ? '#a0a0a0' : index === 2 ? '#a56a2a' : '#495057'} 100%)`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 700,
-                              fontSize: Math.max(12, 16 - index * 2),
-                              boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-                              transition: 'all 0.3s ease',
-                              '&:hover': {
-                                transform: 'scale(1.1)',
-                                boxShadow: '0 12px 35px rgba(0,0,0,0.3)'
-                              }
-                            }}
-                          >
-                            <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="caption" sx={{ display: 'block', fontWeight: 800 }}>
-                                {result.alternative.name}
-                              </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 900 }}>
-                                {result.totalScore.toFixed(1)}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </Card>
                 </Box>
               ) : (
                 <Alert severity="info">
@@ -2159,7 +2209,7 @@ export const ProblemDetail: React.FC = () => {
         open={ahpFullScreenMode}
         onClose={() => setAhpFullScreenMode(false)}
       >
-        <AppBar position="sticky">
+        <AppBar position="sticky" sx={{ background: 'linear-gradient(45deg, #81C784 70%, #FF8A9D 30%)' }}>
           <Toolbar>
             <IconButton edge="start" color="inherit" onClick={() => setAhpFullScreenMode(false)}>
               <Close />
@@ -2188,7 +2238,16 @@ export const ProblemDetail: React.FC = () => {
 
             {/* 当前选择状态 */}
             <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="body1" align="center" color="primary.main" fontWeight="bold">
+              <Typography variant="body1" align="center" fontWeight="bold"
+                sx={{
+                  color: () => {
+                    const value = ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1;
+                    if (value === 1) return '#666666'; // 同等重要 - 灰色
+                    if (value > 1) return '#81C784';   // 上方准则更重要 - 绿色
+                    return '#FF8A9D';                  // 下方准则更重要 - 粉色
+                  }
+                }}
+              >
                 {getCurrentSelectionText(ahpMatrix[currentAhpComparison.criterion1]?.[currentAhpComparison.criterion2] || 1)}
               </Typography>
               <Typography variant="body2" align="center" color="text.secondary">
@@ -2203,7 +2262,7 @@ export const ProblemDetail: React.FC = () => {
                 sx={{
                   p: 3,
                   textAlign: 'center',
-                  bgcolor: 'primary.light',
+                  bgcolor: '#81C784',
                   color: 'white',
                   borderRadius: 2,
                   transition: 'all 0.3s ease',
@@ -2233,7 +2292,7 @@ export const ProblemDetail: React.FC = () => {
                     //   border: 'none',
                     // },
                     '& .MuiSlider-rail': {
-                      background: 'linear-gradient(90deg, #4CAF50 0%, #4CAF50 50%, #2196F3 50%, #2196F3 100%)',
+                      background: 'linear-gradient(90deg, #81C784 0%, #81C784 50%, #FF8A9D 50%, #FF8A9D 100%)',
                       opacity: 0.9,
                     },
                     '& .MuiSlider-thumb': {
@@ -2250,11 +2309,11 @@ export const ProblemDetail: React.FC = () => {
 
                 {/* 滑动条标签 */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                  <Typography variant="body2" color="success.main" fontWeight="bold">
-                    {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.name}更重要
-                  </Typography>
-                  <Typography variant="body2" color="primary.main" fontWeight="bold">
+                  <Typography variant="body2" color="#81C784" fontWeight="bold">
                     {problem?.criteria.find(c => c.id === currentAhpComparison.criterion1)?.name}更重要
+                  </Typography>
+                  <Typography variant="body2" color="#FF8A9D" fontWeight="bold">
+                    {problem?.criteria.find(c => c.id === currentAhpComparison.criterion2)?.name}更重要
                   </Typography>
                 </Box>
               </Box>
@@ -2264,7 +2323,7 @@ export const ProblemDetail: React.FC = () => {
                 sx={{
                   p: 3,
                   textAlign: 'center',
-                  bgcolor: 'secondary.light',
+                  bgcolor: '#FF8A9D',
                   color: 'white',
                   borderRadius: 2,
                   transition: 'all 0.3s ease',
@@ -2285,6 +2344,7 @@ export const ProblemDetail: React.FC = () => {
                   fullWidth
                   onClick={() => handleAhpComparisonChange(1)}
                   startIcon={<NavigateBefore />}
+                  sx={{ borderColor: '#81C784', color: '#81C784' }}
                 >
                   重置为同等重要
                 </Button>
@@ -2293,6 +2353,7 @@ export const ProblemDetail: React.FC = () => {
                   fullWidth
                   onClick={handleNextAhpComparison}
                   endIcon={<NavigateNext />}
+                  sx={{ bgcolor: '#81C784', '&:hover': { bgcolor: '#66BB6A' } }}
                 >
                   {getNextAhpComparison() ? '继续比较' : '完成比较'}
                 </Button>
