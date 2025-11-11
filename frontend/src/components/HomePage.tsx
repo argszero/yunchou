@@ -21,6 +21,7 @@ import {
   Snackbar
 } from '@mui/material';
 import { Add, Edit, Delete, Share } from '@mui/icons-material';
+import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import type { DecisionProblem } from '../types';
 import { apiClient } from '../utils/api';
@@ -381,23 +382,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateProblem }) => {
               扫描二维码或复制链接分享给其他人
             </Typography>
 
-            {/* 二维码占位区域 */}
-            <Box
-              sx={{
-                width: 200,
-                height: 200,
-                bgcolor: 'grey.100',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 2,
-                mx: 'auto',
-                mb: 3
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                二维码生成区域
-              </Typography>
+            {/* 二维码区域 */}
+            <Box sx={{ mb: 3 }}>
+              <QRCodeSVG
+                value={problemToShare ? `${window.location.origin}/problem/${problemToShare.id}` : ''}
+                size={200}
+                level="M"
+                marginSize={1}
+                style={{
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  margin: '0 auto',
+                  display: 'block'
+                }}
+              />
             </Box>
 
             {/* 分享链接 */}
