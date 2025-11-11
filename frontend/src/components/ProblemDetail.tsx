@@ -171,7 +171,7 @@ export const ProblemDetail: React.FC = () => {
     if (problem && problem.criteria && problem.criteria.length > 0) {
       // 使用后端返回的默认权重，如果没有则使用均等权重
       const initialWeights: Record<string, number> = {};
-      problem.criteria.forEach((criterion, index) => {
+      problem.criteria.forEach((criterion) => {
         const defaultWeight = criterion.weight !== null && criterion.weight !== undefined
           ? criterion.weight
           : Math.floor(100 / problem.criteria.length);
